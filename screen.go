@@ -1,6 +1,40 @@
 package main
 
-import "github.com/gdamore/tcell/v2"
+import (
+	"fmt"
+	"log"
+
+	"github.com/gdamore/tcell/v2"
+)
+
+var defStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorDefault) // Provide option to change, later.
+var boxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorRed)
+var errBoxStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
+var errTextStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
+
+type context int
+
+const (
+	ctxMain context = iota // Main = main screen with note lists. No input boxes, no notes opened.
+	ctxInput
+)
+
+var currentCtx = ctxMain
+
+var errMsg = ""
+
+func drawScreen(s tcell.Screen) {
+	s.Clear() // Because of the background square, this might not be necessary.
+	xmax, ymax := s.Size()
+	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
+	drawListBox(s, boxStyle)
+	drawNotes(s, boxStyle)
+	errMsg = fmt.Sprintf("DEBUG: selected == %d", selected)
+	if errMsg != "" {
+		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, errMsg)
+	}
+	s.Show()
+}
 
 func updateLoop(s tcell.Screen) {
 	for {
@@ -10,19 +44,50 @@ func updateLoop(s tcell.Screen) {
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
 			s.Sync()
-			draw(s)
 		case *tcell.EventKey:
-			if ev.Key() == tcell.KeyEscape || ev.Key() == tcell.KeyCtrlC || ev.Rune() == 'q' {
+			switch ev.Key() {
+			case tcell.KeyEscape, tcell.KeyCtrlC:
 				return
-			} else if ev.Key() == tcell.KeyCtrlL {
-				s.Clear()
-			} else if ev.Rune() == 'u' {
-				s.Sync()
+			case tcell.KeyCtrlL:
+				// s.Clear() // With drawScreen() at after this in loop, this might be useless.
+				errMsg = ""
+			}
+
+			r := ev.Rune()
+			switch currentCtx {
+			case ctxMain:
+				if r == 'q' {
+					return
+				} else if r == 'u' {
+					s.Sync()
+				} else if r == 'a' {
+					newNote(fmt.Sprintf("Note %d", len(list.notes)+1))
+				} else if r == 'd' {
+					deleteNote()
+				} else if ev.Key() == tcell.KeyDown {
+					moveSelection("down")
+				} else if ev.Key() == tcell.KeyUp {
+					moveSelection("up")
+				}
+			case ctxInput:
+				fmt.Print("")
+			default:
+				errMsg = "unimplemented context enum"
 			}
 		}
-
-		s.Show()
+		drawScreen(s)
 	}
+}
+
+func newScreen() tcell.Screen {
+	s, err := tcell.NewScreen()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	if err := s.Init(); err != nil {
+		log.Fatalf("%+v", err)
+	}
+	return s
 }
 
 func drawText(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
@@ -39,6 +104,9 @@ func drawText(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string
 			break
 		}
 	}
+}
+func drawErrBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
+	drawBox(s, x1, y1, x2, y2, style, text)
 }
 
 func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
@@ -71,14 +139,9 @@ func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string)
 		s.SetContent(x2, y2, tcell.RuneLRCorner, nil, style)
 	}
 
-	drawText(s, x1+1, y1+1, x2-1, y2-1, defStyle, text)
-}
-
-var defStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorDefault)
-var boxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorRed)
-
-func draw(s tcell.Screen) {
-	xmax, ymax := s.Size()
-	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "")
-	drawBox(s, 1, 1, 42, 7, boxStyle, "This is temporary text just to see how it renders.")
+	textStyle := defStyle
+	if style == errBoxStyle {
+		textStyle = errTextStyle
+	}
+	drawText(s, x1+1, y1+1, x2-1, y2-1, textStyle, text)
 }

@@ -1,23 +1,10 @@
 package main
 
-import (
-	"log"
-
-	"github.com/gdamore/tcell/v2"
-)
-
 func main() {
 
-	s, err := tcell.NewScreen()
-	if err != nil {
-		log.Fatalf("%+v", err)
-	}
-	if err := s.Init(); err != nil {
-		log.Fatalf("%+v", err)
-	}
+	s := newScreen()
 
 	s.SetStyle(defStyle)
-	s.Clear()
 
 	quit := func() {
 		maybePanic := recover()
@@ -27,6 +14,11 @@ func main() {
 		}
 	}
 	defer quit()
+
+	newNote("Note 1")
+	newNote("Note 2")
+	newNote("Note 3 with an extra long message just to test truncation")
+	selected = 0
 
 	updateLoop(s)
 }
