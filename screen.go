@@ -29,7 +29,7 @@ func drawScreen(s tcell.Screen) {
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
 	drawListBox(s, boxStyle)
 	drawNotes(s, boxStyle)
-	errMsg = fmt.Sprintf("DEBUG: selected == %d", selected)
+	errMsg = fmt.Sprintf("DEBUG: %+v selected == %d", list, selected)
 	if errMsg != "" {
 		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, errMsg)
 	}
