@@ -33,6 +33,10 @@ func newNote(text string) {
 	list.UpdateHeight()
 }
 
+func editNote(n *Note, newText string) {
+	n.text = newText
+}
+
 func deleteNote() {
 	l := len(list.notes)
 	if l == 0 {
@@ -53,6 +57,9 @@ func drawListBox(s tcell.Screen, style tcell.Style) {
 	if list.h > 0 {
 		drawBox(s, list.x, list.y, list.x+list.w, list.y+list.h, style, "")
 	}
+	name := " List "
+	ox := 2
+	drawText(s, list.x+ox, list.y, list.x+ox+len(name), list.y, defStyle, name)
 }
 
 func drawNotes(s tcell.Screen, style tcell.Style) {
