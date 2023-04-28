@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -18,7 +15,8 @@ func updateLoop(s tcell.Screen) {
 		case *tcell.EventKey:
 
 			switch ev.Key() {
-			case tcell.KeyEscape, tcell.KeyCtrlC:
+			// case tcell.KeyEscape, tcell.KeyCtrlC:
+			case tcell.KeyCtrlC:
 				return
 			case tcell.KeyCtrlL:
 				// s.Clear() // With drawScreen() after this in loop, this might be useless.
@@ -27,11 +25,14 @@ func updateLoop(s tcell.Screen) {
 
 			switch currentCtx {
 			case ctxMain:
-				if ctxMainHandler(s, ev) {
+				ctxMainHandler(s, ev)
+			case ctxNoteView:
+				ctxNoteViewHandler(s, ev)
+			case ctxConfirm:
+				ctxConfirmHandler(s, ev)
+				if ctxConfirmHandler(s, ev) {
 					return
 				}
-			case ctxNoteView:
-				// TODO
 			default:
 				errMsg = "unimplemented context enum"
 			}
@@ -42,29 +43,45 @@ func updateLoop(s tcell.Screen) {
 	}
 }
 
-func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
+func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 	r := ev.Rune()
 	switch r {
 	case 'q':
-		return true
+		currentCtx = ctxConfirm
 	case 'u':
 		s.Sync()
 	case 'a':
-		list.newNote(fmt.Sprintf("Note %d", list.length()+1))
+		addNote(s)
 	case 'e':
-		// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
-		err := s.Suspend()
-		if err != nil {
-			log.Fatalf("%+v", err)
+		editNote(s)
+	case 'd':
+		list.deleteNote()
+	case 's':
+		saveToFile()
+	case 'v':
+		currentCtx = ctxNoteView
+	default:
+		if ev.Key() == tcell.KeyDown {
+			moveSelection("down")
+		} else if ev.Key() == tcell.KeyUp {
+			moveSelection("up")
+		} else {
+			errMsg = "that key does nothing"
 		}
 
-		newText := openTextPrompt(list.selected().Text)
-		list.editNote(newText)
+		errMsg = defErr()
+	}
+}
 
-		err = s.Resume()
-		if err != nil {
-			log.Fatalf("%+v", err)
-		}
+func ctxNoteViewHandler(s tcell.Screen, ev *tcell.EventKey) {
+	r := ev.Rune()
+	switch r {
+	case 'q', 'v':
+		currentCtx = ctxMain
+	case 'u':
+		s.Sync()
+	case 'e':
+		editNote(s)
 	case 'd':
 		list.deleteNote()
 	case 's':
@@ -79,6 +96,25 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
 		}
 
 		errMsg = defErr()
+
 	}
-	return false
+}
+
+func ctxConfirmHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
+	r := ev.Rune()
+	switch r {
+	case 'y', 'Y':
+		return true
+	default:
+		currentCtx = ctxMain
+		return false
+	}
+}
+
+func addNote(s tcell.Screen) {
+	openEditorStart(s, "", list.newNote)
+}
+
+func editNote(s tcell.Screen) {
+	openEditorStart(s, list.selected().Text, list.editNote)
 }

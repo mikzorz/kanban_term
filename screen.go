@@ -12,6 +12,8 @@ import (
 
 var defStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorDefault) // Provide option to change, later.
 var boxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorRed)
+var noteViewBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorGreen)
+var confirmPromptBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorYellow)
 var errBoxStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
 var errTextStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
 
@@ -20,6 +22,7 @@ type context int
 const (
 	ctxMain     context = iota // Main = main screen with note lists. No input boxes, no notes opened.
 	ctxNoteView                // NoteView = the screen, in tcell, for viewing full note contents. Not the text editor.
+	ctxConfirm
 )
 
 var currentCtx = ctxMain
@@ -29,25 +32,35 @@ var errMsg = ""
 // For debugging purposes only.
 var loopCount = 0
 
-var inputBoxW, inputBoxH = 60, 8
-
 func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
 	xmax, ymax := s.Size()
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
 	list.draw(s)
 
-	if currentCtx == ctxNoteView {
-		left := (xmax-1)/2 - (inputBoxW / 2)
-		right := (xmax-1)/2 + (inputBoxW / 2)
-		top := (ymax-1)/2 - (inputBoxH / 2)
-		bottom := (ymax-1)/2 + (inputBoxH / 2)
-		drawBox(s, left, top, right, bottom, boxStyle, "")
-		promptMsg := " Note "
-		drawText(s, left+2, top, left+2+len(promptMsg), top, defStyle, promptMsg)
+	switch currentCtx {
+	case ctxNoteView:
+		var noteViewW, noteViewH = xmax - 8, ymax - 8
+		left := (xmax-1)/2 - (noteViewW / 2)
+		right := (xmax-1)/2 + (noteViewW / 2)
+		top := (ymax-1)/2 - (noteViewH / 2)
+		bottom := (ymax-1)/2 + (noteViewH / 2)
+		drawBox(s, left, top, right, bottom, noteViewBoxStyle, "")
+		windowTitle := " Note "
+		drawText(s, left+2, top, left+2+len(windowTitle), top, defStyle, windowTitle)
 		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.selected().Text)
-	} else {
-		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, a: Add, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
+		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q,v: Back, s: Save, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
+	case ctxConfirm:
+		promptMsg := " Are you sure you want to quit? [y/N] "
+		var confirmBoxW, confirmBoxH = len(promptMsg) + 2, 3
+		left := (xmax-1)/2 - (confirmBoxW / 2)
+		right := (xmax-1)/2 + (confirmBoxW / 2)
+		top := (ymax-1)/2 - (confirmBoxH / 2)
+		bottom := (ymax-1)/2 + (confirmBoxH / 2)
+		drawBox(s, left, top, right, bottom, confirmPromptBoxStyle, "")
+		drawText(s, left+1, top+1, right-1, bottom-1, defStyle, promptMsg)
+	default:
+		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, v: View Note, a: New, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
 	}
 
 	if errMsg != "" {
@@ -59,7 +72,24 @@ func defErr() string {
 	return fmt.Sprintf("DEBUG: len(list.Notes)=%d selected=%d loopCount=%d", list.length(), selected, loopCount)
 }
 
-func openTextPrompt(s string) string {
+// fn is expected to be things like list.newNote, list.editNote etc
+func openEditorStart(s tcell.Screen, defText string, fn func(string)) {
+	// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
+	err := s.Suspend()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	newText := openEditor(defText)
+	fn(newText)
+
+	err = s.Resume()
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+}
+
+func openEditor(s string) string {
 	// I don't know how to hook directly into a text editor, I tried, didn't work, so I won't. Using tempfiles instead.
 
 	file, err := ioutil.TempFile(dir, "note*.txt")
@@ -78,7 +108,7 @@ func openTextPrompt(s string) string {
 	if editor == "" {
 		editor = "vi"
 	}
-	log.Printf("Using %s", editor)
+	// log.Printf("Using %s", editor)
 
 	cmd := exec.Command(editor, file.Name())
 	cmd.Stdin = os.Stdin
@@ -86,7 +116,7 @@ func openTextPrompt(s string) string {
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
-	log.Printf("Running %s...", editor)
+	// log.Printf("Running %s...", editor)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
