@@ -10,8 +10,6 @@ type Note struct {
 	Text string `json:"text"`
 }
 
-var selected = -1
-
 // TODO add json
 type List struct {
 	Notes []Note `json:"notes"`
@@ -21,8 +19,6 @@ type List struct {
 type Box struct {
 	x, y, w, h int
 }
-
-var list *List = &List{}
 
 func (l *List) SetDimensions() {
 	l.x, l.y, l.w, l.h = 1, 1, 22, 0
@@ -37,34 +33,47 @@ func (l *List) UpdateHeight() {
 	l.h = (4*len(l.Notes) + a)
 }
 
-func newNote(text string) {
+func (l *List) length() int {
+	return len(l.Notes)
+}
+
+func (l *List) newNote(text string) {
 	note := Note{text}
-	list.Notes = append(list.Notes, note)
-	list.UpdateHeight()
+	l.Notes = append(l.Notes, note)
+	l.UpdateHeight()
 }
 
-func editNote(n *Note, newText string) {
-	n.Text = newText
+func (l *List) selected() *Note {
+	return &l.Notes[selected]
 }
 
-func deleteNote() {
-	l := len(list.Notes)
-	if l == 0 {
+func (l *List) editNote(newText string) {
+	l.selected().Text = newText
+}
+
+func (l *List) deleteNote() {
+	le := l.length()
+	if le == 0 {
 		return
 	}
-	firstHalf := list.Notes[:selected]
+	firstPart := l.Notes[:selected]
 
-	if selected == l-1 {
-		list.Notes = firstHalf
+	if selected == le-1 {
+		l.Notes = firstPart
 	} else {
-		list.Notes = append(firstHalf, list.Notes[selected+1:]...)
+		l.Notes = append(firstPart, l.Notes[selected+1:]...)
 	}
-	list.UpdateHeight()
+	l.UpdateHeight()
 	moveSelection("up")
 }
 
-func drawListBox(s tcell.Screen, style tcell.Style) {
-	if len(list.Notes) > 0 {
+func (l *List) draw(s tcell.Screen) {
+	l.drawBox(s, boxStyle)
+	l.drawNotes(s, boxStyle)
+}
+
+func (l *List) drawBox(s tcell.Screen, style tcell.Style) {
+	if l.length() > 0 {
 		drawBox(s, list.x, list.y, list.x+list.w, list.y+list.h, style, "")
 		name := " List "
 		ox := 2
@@ -72,10 +81,10 @@ func drawListBox(s tcell.Screen, style tcell.Style) {
 	}
 }
 
-func drawNotes(s tcell.Screen, style tcell.Style) {
+func (l *List) drawNotes(s tcell.Screen, style tcell.Style) {
 	x, y := list.x+1, list.y+1
 
-	for i := 0; i < len(list.Notes); i++ {
+	for i := 0; i < list.length(); i++ {
 		n := list.Notes[i]
 		txt := n.Text
 		if i == selected {
@@ -88,7 +97,7 @@ func drawNotes(s tcell.Screen, style tcell.Style) {
 
 // Move selection "up" or "down"
 func moveSelection(dir string) {
-	if len(list.Notes) == 0 {
+	if list.length() == 0 {
 		return
 	}
 
@@ -98,7 +107,7 @@ func moveSelection(dir string) {
 			selected--
 		}
 	case "down":
-		if selected < len(list.Notes)-1 {
+		if selected < list.length()-1 {
 			selected++
 		}
 	default:

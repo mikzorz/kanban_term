@@ -39,8 +39,8 @@ func newSaveFile() *os.File {
 		log.Fatalf("can't create new save file, %+v", err)
 	}
 
-	newNote("Example Note 1")
-	newNote("Example Note 2")
+	list.newNote("Example Note 1")
+	list.newNote("Example Note 2")
 
 	return f
 }

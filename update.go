@@ -14,8 +14,9 @@ func updateLoop(s tcell.Screen) {
 		case *tcell.EventResize:
 			s.Sync()
 			drawScreen(s)
+			s.Show()
 		case *tcell.EventKey:
-			loopCount++
+
 			switch ev.Key() {
 			case tcell.KeyEscape, tcell.KeyCtrlC:
 				return
@@ -24,44 +25,10 @@ func updateLoop(s tcell.Screen) {
 				errMsg = ""
 			}
 
-			r := ev.Rune()
 			switch currentCtx {
 			case ctxMain:
-				switch r {
-				case 'q':
+				if ctxMainHandler(s, ev) {
 					return
-				case 'u':
-					s.Sync()
-				case 'a':
-					newNote(fmt.Sprintf("Note %d", len(list.Notes)+1))
-				case 'e':
-					// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
-					err := s.Suspend()
-					if err != nil {
-						log.Fatalf("%+v", err)
-					}
-
-					newText := openTextPrompt(list.Notes[selected].Text)
-					editNote(&list.Notes[selected], newText)
-
-					err = s.Resume()
-					if err != nil {
-						log.Fatalf("%+v", err)
-					}
-				case 'd':
-					deleteNote()
-				case 's':
-					saveToFile()
-				default:
-					if ev.Key() == tcell.KeyDown {
-						moveSelection("down")
-					} else if ev.Key() == tcell.KeyUp {
-						moveSelection("up")
-					} else {
-						errMsg = "that key does nothing"
-					}
-
-					errMsg = defErr()
 				}
 			case ctxNoteView:
 				// TODO
@@ -70,8 +37,48 @@ func updateLoop(s tcell.Screen) {
 			}
 
 			drawScreen(s)
+			s.Show()
 		}
-		s.Show()
-
 	}
+}
+
+func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
+	r := ev.Rune()
+	switch r {
+	case 'q':
+		return true
+	case 'u':
+		s.Sync()
+	case 'a':
+		list.newNote(fmt.Sprintf("Note %d", list.length()+1))
+	case 'e':
+		// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
+		err := s.Suspend()
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+
+		newText := openTextPrompt(list.selected().Text)
+		list.editNote(newText)
+
+		err = s.Resume()
+		if err != nil {
+			log.Fatalf("%+v", err)
+		}
+	case 'd':
+		list.deleteNote()
+	case 's':
+		saveToFile()
+	default:
+		if ev.Key() == tcell.KeyDown {
+			moveSelection("down")
+		} else if ev.Key() == tcell.KeyUp {
+			moveSelection("up")
+		} else {
+			errMsg = "that key does nothing"
+		}
+
+		errMsg = defErr()
+	}
+	return false
 }

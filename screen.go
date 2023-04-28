@@ -35,8 +35,7 @@ func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
 	xmax, ymax := s.Size()
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
-	drawListBox(s, boxStyle)
-	drawNotes(s, boxStyle)
+	list.draw(s)
 
 	if currentCtx == ctxNoteView {
 		left := (xmax-1)/2 - (inputBoxW / 2)
@@ -46,7 +45,7 @@ func drawScreen(s tcell.Screen) {
 		drawBox(s, left, top, right, bottom, boxStyle, "")
 		promptMsg := " Note "
 		drawText(s, left+2, top, left+2+len(promptMsg), top, defStyle, promptMsg)
-		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.Notes[selected].Text)
+		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.selected().Text)
 	} else {
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, a: Add, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
 	}
@@ -57,7 +56,7 @@ func drawScreen(s tcell.Screen) {
 }
 
 func defErr() string {
-	return fmt.Sprintf("DEBUG: len(list.Notes)=%d selected=%d loopCount=%d", len(list.Notes), selected, loopCount)
+	return fmt.Sprintf("DEBUG: len(list.Notes)=%d selected=%d loopCount=%d", list.length(), selected, loopCount)
 }
 
 func openTextPrompt(s string) string {

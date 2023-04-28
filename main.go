@@ -10,7 +10,12 @@ var dir = os.TempDir() + "/kanban_term"
 var saveFileName = "kanban.json"
 var saveFile *os.File
 
+var list *List
+var selected = 0
+
 func main() {
+	list = &List{}
+
 	errMsg = defErr()
 
 	var err error
@@ -35,8 +40,6 @@ func main() {
 		}
 	}
 	defer quit()
-
-	selected = 0
 
 	updateLoop(s)
 }
