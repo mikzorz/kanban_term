@@ -46,10 +46,9 @@ func drawScreen(s tcell.Screen) {
 		drawBox(s, left, top, right, bottom, boxStyle, "")
 		promptMsg := " Note "
 		drawText(s, left+2, top, left+2+len(promptMsg), top, defStyle, promptMsg)
-		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.notes[selected].text)
-		// TODO separate text upto cursor, then invert text under cursor, then continue with normal text.
+		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.Notes[selected].Text)
 	} else {
-		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, a: Add, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
+		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, a: Add, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
 	}
 
 	if errMsg != "" {
@@ -58,75 +57,7 @@ func drawScreen(s tcell.Screen) {
 }
 
 func defErr() string {
-	return fmt.Sprintf("DEBUG: len(list.notes)=%d selected=%d loopCount=%d", len(list.notes), selected, loopCount)
-}
-
-func updateLoop(s tcell.Screen) {
-	errMsg = defErr()
-	for {
-		ev := s.PollEvent()
-		switch ev := ev.(type) {
-		case *tcell.EventResize:
-			s.Sync()
-			drawScreen(s)
-		case *tcell.EventKey:
-			loopCount++
-			switch ev.Key() {
-			case tcell.KeyEscape, tcell.KeyCtrlC:
-				return
-			case tcell.KeyCtrlL:
-				// s.Clear() // With drawScreen() after this in loop, this might be useless.
-				errMsg = ""
-			}
-
-			r := ev.Rune()
-			switch currentCtx {
-			case ctxMain:
-				switch r {
-				case 'q':
-					return
-				case 'u':
-					s.Sync()
-				case 'a':
-					newNote(fmt.Sprintf("Note %d", len(list.notes)+1))
-				case 'e':
-					// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
-					err := s.Suspend()
-					if err != nil {
-						log.Fatalf("%+v", err)
-					}
-
-					newText := openTextPrompt(list.notes[selected].text)
-					editNote(&list.notes[selected], newText)
-
-					err = s.Resume()
-					if err != nil {
-						log.Fatalf("%+v", err)
-					}
-				case 'd':
-					deleteNote()
-				default:
-					if ev.Key() == tcell.KeyDown {
-						moveSelection("down")
-					} else if ev.Key() == tcell.KeyUp {
-						moveSelection("up")
-					} else {
-						errMsg = "that key does nothing"
-					}
-
-					errMsg = defErr()
-				}
-			case ctxNoteView:
-				// TODO
-			default:
-				errMsg = "unimplemented context enum"
-			}
-
-			drawScreen(s)
-		}
-		s.Show()
-
-	}
+	return fmt.Sprintf("DEBUG: len(list.Notes)=%d selected=%d loopCount=%d", len(list.Notes), selected, loopCount)
 }
 
 func openTextPrompt(s string) string {

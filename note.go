@@ -7,67 +7,77 @@ import (
 )
 
 type Note struct {
-	text string
+	Text string `json:"text"`
 }
 
 var selected = -1
 
+// TODO add json
 type List struct {
-	notes      []Note
+	Notes []Note `json:"notes"`
+	Box
+}
+
+type Box struct {
 	x, y, w, h int
 }
 
-var list *List = &List{x: 1, y: 1, w: 22, h: 0}
+var list *List = &List{}
+
+func (l *List) SetDimensions() {
+	l.x, l.y, l.w, l.h = 1, 1, 22, 0
+	l.UpdateHeight()
+}
 
 func (l *List) UpdateHeight() {
 	a := 0
-	if len(l.notes) > 0 {
+	if len(l.Notes) > 0 {
 		a = 1
 	}
-	l.h = (4*len(l.notes) + a)
+	l.h = (4*len(l.Notes) + a)
 }
 
 func newNote(text string) {
 	note := Note{text}
-	list.notes = append(list.notes, note)
+	list.Notes = append(list.Notes, note)
 	list.UpdateHeight()
 }
 
 func editNote(n *Note, newText string) {
-	n.text = newText
+	n.Text = newText
 }
 
 func deleteNote() {
-	l := len(list.notes)
+	l := len(list.Notes)
 	if l == 0 {
 		return
 	}
-	firstHalf := list.notes[:selected]
+	firstHalf := list.Notes[:selected]
 
 	if selected == l-1 {
-		list.notes = firstHalf
+		list.Notes = firstHalf
 	} else {
-		list.notes = append(firstHalf, list.notes[selected+1:]...)
+		list.Notes = append(firstHalf, list.Notes[selected+1:]...)
 	}
 	list.UpdateHeight()
 	moveSelection("up")
 }
 
 func drawListBox(s tcell.Screen, style tcell.Style) {
-	if list.h > 0 {
+	if len(list.Notes) > 0 {
 		drawBox(s, list.x, list.y, list.x+list.w, list.y+list.h, style, "")
+		name := " List "
+		ox := 2
+		drawText(s, list.x+ox, list.y, list.x+ox+len(name), list.y, defStyle, name)
 	}
-	name := " List "
-	ox := 2
-	drawText(s, list.x+ox, list.y, list.x+ox+len(name), list.y, defStyle, name)
 }
 
 func drawNotes(s tcell.Screen, style tcell.Style) {
 	x, y := list.x+1, list.y+1
 
-	for i := 0; i < len(list.notes); i++ {
-		n := list.notes[i]
-		txt := n.text
+	for i := 0; i < len(list.Notes); i++ {
+		n := list.Notes[i]
+		txt := n.Text
 		if i == selected {
 			txt = "> " + txt
 		}
@@ -78,7 +88,7 @@ func drawNotes(s tcell.Screen, style tcell.Style) {
 
 // Move selection "up" or "down"
 func moveSelection(dir string) {
-	if len(list.notes) == 0 {
+	if len(list.Notes) == 0 {
 		return
 	}
 
@@ -88,7 +98,7 @@ func moveSelection(dir string) {
 			selected--
 		}
 	case "down":
-		if selected < len(list.notes)-1 {
+		if selected < len(list.Notes)-1 {
 			selected++
 		}
 	default:

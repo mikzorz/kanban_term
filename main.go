@@ -5,16 +5,23 @@ import (
 	"os"
 )
 
-var dir = os.TempDir() + "/kanban_term" //
+var dir = os.TempDir() + "/kanban_term"
+
+var saveFileName = "kanban.json"
+var saveFile *os.File
 
 func main() {
+	errMsg = defErr()
+
 	var err error
-	// dir, err = ioutil.TempDir("", "")
-	err = os.MkdirAll(dir, 0700)
-	if err != nil {
+
+	if err = os.MkdirAll(dir, 0700); err != nil {
 		log.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
+
+	saveFile = initSaveFile()
+	defer saveFile.Close()
 
 	s := newScreen()
 
@@ -29,9 +36,6 @@ func main() {
 	}
 	defer quit()
 
-	newNote("Note 1")
-	newNote("Note 2")
-	newNote("Note 3 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
 	selected = 0
 
 	updateLoop(s)
