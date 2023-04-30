@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -13,7 +14,8 @@ type List struct {
 }
 
 func (l *List) SetDimensions(listIndex int) {
-	l.x, l.y, l.w, l.h = 2+(l.w+2)*listIndex, 1, 22, 0
+	l.w = 22
+	l.x, l.y, l.h = 2+(l.w+2)*listIndex, 1, 0
 	l.UpdateHeight()
 }
 
@@ -52,7 +54,7 @@ func (l *List) deleteNote(i int) {
 		l.Notes = append(firstPart, l.Notes[i+1:]...)
 	}
 	l.UpdateHeight()
-	kan.moveSelection("up", false)
+	kan.boundSelection()
 }
 
 // Swap notes at indices i and j.
@@ -75,7 +77,7 @@ func (l *List) drawBox(s tcell.Screen) {
 		style = unfocusedListStyle
 	}
 	drawBox(s, l.x, l.y, l.x+l.w, h, style, "")
-	name := fmt.Sprintf(" %s ", l.Name)
+	name := fmt.Sprintf(" %s ", strings.TrimSpace(l.Name))
 	ox := 2
 	drawText(s, l.x+ox, l.y, l.x+ox+len(name), l.y, defStyle, name)
 }

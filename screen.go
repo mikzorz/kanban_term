@@ -40,7 +40,8 @@ func drawScreen(s tcell.Screen) {
 	xmax, ymax := s.Size()
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
 	kan.draw(s)
-	// list.draw(s)
+
+	// TODO: edit keybinding strings
 
 	switch currentCtx {
 	case ctxNoteView:

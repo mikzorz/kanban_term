@@ -54,10 +54,16 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 		s.Sync()
 	case 'a':
 		addNote(s)
+	case 'A':
+		kan.newList(fmt.Sprintf("List %d", len(kan.Lists)+1))
 	case 'e':
 		editNote(s)
+	case 'r':
+		renameList(s)
 	case 'd':
 		kan.deleteNote()
+	case 'D':
+		kan.deleteList()
 	case 's':
 		saveToFile()
 	case 'v':
@@ -105,12 +111,20 @@ func addNote(s tcell.Screen) {
 }
 
 func editNote(s tcell.Screen) {
-	openEditorStart(s, kan.currentNote().Text, kan.editNote)
+	if kan.currentList().length() > 0 {
+		openEditorStart(s, kan.currentNote().Text, kan.editNote)
+	}
+}
+
+func renameList(s tcell.Screen) {
+	openEditorStart(s, kan.currentList().Name, kan.renameList)
 }
 
 func handleSelectionMovement(ev *tcell.EventKey) {
 	mod := ev.Modifiers()
 	shiftHeld := mod == tcell.ModShift
+	ctrlHeld := mod == tcell.ModShift
+	_ = ctrlHeld // TODO
 	switch ev.Key() {
 	case tcell.KeyDown:
 		kan.moveSelection("down", shiftHeld)

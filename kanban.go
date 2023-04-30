@@ -24,9 +24,13 @@ func (k *Kanban) init() {
 
 func (k *Kanban) newList(name string) {
 	k.Lists = append(k.Lists, &List{Name: name, Notes: make([]*Note, 0)})
+	k.SetListDimensions()
 }
 
 func (k *Kanban) currentList() *List {
+	if len(k.Lists) == 0 {
+		return &List{}
+	}
 	return k.Lists[k.curListIdx]
 }
 
@@ -42,9 +46,31 @@ func (k *Kanban) editNote(newText string) {
 	k.currentList().editNote(k.curNoteIdx, newText)
 }
 
+func (k *Kanban) renameList(newName string) {
+	k.currentList().Name = newName
+}
+
 func (k *Kanban) deleteNote() {
 	// TODO: confirm prompt
 	k.currentList().deleteNote(k.curNoteIdx)
+}
+
+func (k *Kanban) deleteList() {
+	// TODO: confirm prompt
+	le := len(k.Lists)
+	if le == 0 {
+		return
+	}
+	i := k.curListIdx
+	firstPart := k.Lists[:i]
+
+	if i == le-1 {
+		k.Lists = firstPart
+	} else {
+		k.Lists = append(firstPart, k.Lists[i+1:]...)
+	}
+	k.SetListDimensions()
+	k.boundSelection()
 }
 
 // Move note from current list to target list
@@ -66,6 +92,20 @@ func (k *Kanban) draw(s tcell.Screen) {
 	// TODO Should probably determine list positions here, not in l.draw()
 	for i, l := range k.Lists {
 		l.draw(s, i == k.curListIdx, k.curNoteIdx)
+	}
+}
+
+func (k *Kanban) boundSelection() {
+	if k.curListIdx < 0 || len(k.Lists) == 0 {
+		k.curListIdx = 0
+	} else if k.curListIdx >= len(k.Lists) {
+		k.curListIdx = len(k.Lists) - 1
+	}
+
+	if k.curNoteIdx < 0 || k.currentList().length() == 0 {
+		k.curNoteIdx = 0
+	} else if k.curNoteIdx >= k.currentList().length() {
+		k.curNoteIdx = k.currentList().length() - 1
 	}
 }
 
