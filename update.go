@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -107,16 +109,20 @@ func editNote(s tcell.Screen) {
 }
 
 func handleSelectionMovement(ev *tcell.EventKey) {
+	mod := ev.Modifiers()
+	shiftHeld := mod == tcell.ModShift
 	switch ev.Key() {
 	case tcell.KeyDown:
-		kan.moveSelection("down")
+		kan.moveSelection("down", shiftHeld)
 	case tcell.KeyUp:
-		kan.moveSelection("up")
+		kan.moveSelection("up", shiftHeld)
 	case tcell.KeyLeft:
-		kan.moveSelection("left")
+		kan.moveSelection("left", shiftHeld)
 	case tcell.KeyRight:
-		kan.moveSelection("right")
+		kan.moveSelection("right", shiftHeld)
 	default:
 		errMsg = "that key does nothing"
 	}
+	errMsg = fmt.Sprintf("EventKey Modifiers: %d, noteIndex: %d, listIndex: %d", mod, kan.curNoteIdx, kan.curListIdx)
+
 }

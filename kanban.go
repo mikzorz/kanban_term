@@ -7,13 +7,13 @@ import (
 )
 
 type Kanban struct {
-	lists      []*List
+	Lists      []*List `json:"lists"`
 	curListIdx int
 	curNoteIdx int
 }
 
 func (k *Kanban) init() {
-	k.lists = make([]*List, 0)
+	k.Lists = make([]*List, 0)
 	k.newList("List 1")
 	k.newList("List 2")
 	k.newList("List 3")
@@ -23,11 +23,11 @@ func (k *Kanban) init() {
 }
 
 func (k *Kanban) newList(name string) {
-	k.lists = append(k.lists, &List{Name: name, Notes: make([]*Note, 0)})
+	k.Lists = append(k.Lists, &List{Name: name, Notes: make([]*Note, 0)})
 }
 
 func (k *Kanban) currentList() *List {
-	return k.lists[k.curListIdx]
+	return k.Lists[k.curListIdx]
 }
 
 func (k *Kanban) currentNote() *Note {
@@ -47,21 +47,30 @@ func (k *Kanban) deleteNote() {
 	k.currentList().deleteNote(k.curNoteIdx)
 }
 
+// Move note from current list to target list
+func (k *Kanban) moveNote(target int) {
+	k.Lists[target].Notes = append(k.Lists[target].Notes, k.currentNote())
+	k.deleteNote()
+	k.SetListDimensions()
+	k.curListIdx = target
+	k.curNoteIdx = k.currentList().length() - 1
+}
+
 func (k *Kanban) SetListDimensions() {
-	for i, l := range k.lists {
+	for i, l := range k.Lists {
 		l.SetDimensions(i)
 	}
 }
 
 func (k *Kanban) draw(s tcell.Screen) {
 	// TODO Should probably determine list positions here, not in l.draw()
-	for i, l := range k.lists {
+	for i, l := range k.Lists {
 		l.draw(s, i == k.curListIdx, k.curNoteIdx)
 	}
 }
 
 // Move selection "up" or "down"
-func (k *Kanban) moveSelection(dir string) {
+func (k *Kanban) moveSelection(dir string, shiftHeld bool) {
 	min := func(a, b int) int {
 		if a < b {
 			return a
@@ -79,21 +88,45 @@ func (k *Kanban) moveSelection(dir string) {
 	switch dir {
 	case "up":
 		if k.curNoteIdx > 0 {
-			k.curNoteIdx--
+			target := k.curNoteIdx - 1
+			if shiftHeld {
+				k.currentList().swap(k.curNoteIdx, target)
+			}
+			k.curNoteIdx = target
 		}
 	case "down":
 		if k.curNoteIdx < k.currentList().length()-1 {
-			k.curNoteIdx++
+			target := k.curNoteIdx + 1
+			if shiftHeld {
+				k.currentList().swap(k.curNoteIdx, target)
+			}
+			k.curNoteIdx = target
 		}
 	case "left":
 		if k.curListIdx > 0 {
-			k.curListIdx--
-			k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+			target := k.curListIdx - 1
+			if shiftHeld {
+				if k.currentList().length() > 0 {
+					k.moveNote(target)
+				}
+			} else {
+				k.curListIdx = target
+				k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+			}
+
 		}
 	case "right":
-		if k.curListIdx < len(k.lists)-1 {
-			k.curListIdx++
-			k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+		if k.curListIdx < len(k.Lists)-1 {
+			target := k.curListIdx + 1
+			if shiftHeld {
+				if k.currentList().length() > 0 {
+					k.moveNote(target)
+				}
+			} else {
+				k.curListIdx = target
+				k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+
+			}
 		}
 	default:
 		log.Fatalf("method Kanban.moveSelection given invalid input: %v+", dir)

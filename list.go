@@ -52,7 +52,12 @@ func (l *List) deleteNote(i int) {
 		l.Notes = append(firstPart, l.Notes[i+1:]...)
 	}
 	l.UpdateHeight()
-	kan.moveSelection("up")
+	kan.moveSelection("up", false)
+}
+
+// Swap notes at indices i and j.
+func (l *List) swap(i, j int) {
+	l.Notes[j], l.Notes[i] = l.Notes[i], l.Notes[j]
 }
 
 func (l *List) draw(s tcell.Screen, isListFocused bool, curSelected int) {

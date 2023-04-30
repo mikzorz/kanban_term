@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-const DEBUG_MODE = false
+const DEBUG_MODE = true
 
 var dir = os.TempDir() + "/kanban_term"
 
