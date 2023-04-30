@@ -38,6 +38,9 @@ func (k *Kanban) currentNote() *Note {
 	return k.currentList().Notes[k.curNoteIdx]
 }
 func (k *Kanban) newNote(text string) {
+	if text == "" {
+		return
+	}
 	k.currentList().newNote(text)
 	k.curNoteIdx = k.currentList().length() - 1
 }
