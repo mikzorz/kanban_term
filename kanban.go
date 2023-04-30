@@ -132,71 +132,61 @@ func (k *Kanban) boundSelection() {
 // Move cursor "up" & "down" through a list. Move "left" & "right" between lists.
 // Hold "Shift" to move note.
 // Hold "Control" to move list.
-func (k *Kanban) moveSelection(dir string, shiftHeld bool, ctrlHeld bool) {
-	min := func(a, b int) int {
-		if a < b {
-			return a
-		}
-		return b
-	}
-
-	max := func(a, b int) int {
-		if a > b {
-			return a
-		}
-		return b
-	}
+func (k *Kanban) moveSelection(dir string, shiftHeld, ctrlHeld bool) {
 
 	switch dir {
 	case "up":
 		if k.curNoteIdx > 0 {
-			target := k.curNoteIdx - 1
-			if shiftHeld {
-				k.currentList().swap(k.curNoteIdx, target)
-			}
-			k.curNoteIdx = target
+			k.moveVertical(k.curNoteIdx-1, shiftHeld)
 		}
 	case "down":
 		if k.curNoteIdx < k.currentList().length()-1 {
-			target := k.curNoteIdx + 1
-			if shiftHeld {
-				k.currentList().swap(k.curNoteIdx, target)
-			}
-			k.curNoteIdx = target
+			k.moveVertical(k.curNoteIdx+1, shiftHeld)
 		}
 	case "left":
 		if k.curListIdx > 0 {
-			target := k.curListIdx - 1
-			if ctrlHeld {
-				k.swap(k.curListIdx, target)
-				k.curListIdx = target
-			} else if shiftHeld {
-				if k.currentList().length() > 0 {
-					k.moveNote(target)
-				}
-			} else {
-				k.curListIdx = target
-				k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
-			}
-
+			k.moveHorizontal(k.curListIdx-1, shiftHeld, ctrlHeld)
 		}
 	case "right":
 		if k.curListIdx < len(k.Lists)-1 {
-			target := k.curListIdx + 1
-			if ctrlHeld {
-				k.swap(k.curListIdx, target)
-				k.curListIdx = target
-			} else if shiftHeld {
-				if k.currentList().length() > 0 {
-					k.moveNote(target)
-				}
-			} else {
-				k.curListIdx = target
-				k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
-
-			}
+			k.moveHorizontal(k.curListIdx+1, shiftHeld, ctrlHeld)
 		}
 	default:
 		log.Fatalf("method Kanban.moveSelection given invalid input: %v+", dir)
 	}
+}
+
+func (k *Kanban) moveVertical(targetIndex int, shiftHeld bool) {
+	if shiftHeld {
+		k.currentList().swap(k.curNoteIdx, targetIndex)
+	}
+	k.curNoteIdx = targetIndex
+}
+
+func (k *Kanban) moveHorizontal(targetIndex int, shiftHeld, ctrlHeld bool) {
+	if ctrlHeld {
+		k.swap(k.curListIdx, targetIndex)
+		k.curListIdx = targetIndex
+	} else if shiftHeld {
+		if k.currentList().length() > 0 {
+			k.moveNote(targetIndex)
+		}
+	} else {
+		k.curListIdx = targetIndex
+		k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
