@@ -57,8 +57,6 @@ func drawScreen(s tcell.Screen) {
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "", "") // Background
 	kan.draw(s)
 
-	// TODO: edit keybinding strings
-
 	switch currentCtx {
 	case ctxNoteView:
 		var noteViewW, noteViewH = xmax - 8, ymax - 8

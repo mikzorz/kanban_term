@@ -94,6 +94,12 @@ func (k *Kanban) moveNote(target int) {
 	k.curNoteIdx = k.currentList().length() - 1
 }
 
+// Swap positions of two lists.
+func (k *Kanban) swap(i, j int) {
+	k.Lists[i], k.Lists[j] = k.Lists[j], k.Lists[i]
+	k.SetListDimensions()
+}
+
 func (k *Kanban) SetListDimensions() {
 	for i, l := range k.Lists {
 		l.SetDimensions(i)
@@ -120,8 +126,10 @@ func (k *Kanban) boundSelection() {
 	}
 }
 
-// Move selection "up" or "down"
-func (k *Kanban) moveSelection(dir string, shiftHeld bool) {
+// Move cursor "up" & "down" through a list. Move "left" & "right" between lists.
+// Hold "Shift" to move note.
+// Hold "Control" to move list.
+func (k *Kanban) moveSelection(dir string, shiftHeld bool, ctrlHeld bool) {
 	min := func(a, b int) int {
 		if a < b {
 			return a
@@ -156,7 +164,10 @@ func (k *Kanban) moveSelection(dir string, shiftHeld bool) {
 	case "left":
 		if k.curListIdx > 0 {
 			target := k.curListIdx - 1
-			if shiftHeld {
+			if ctrlHeld {
+				k.swap(k.curListIdx, target)
+				k.curListIdx = target
+			} else if shiftHeld {
 				if k.currentList().length() > 0 {
 					k.moveNote(target)
 				}
@@ -169,7 +180,10 @@ func (k *Kanban) moveSelection(dir string, shiftHeld bool) {
 	case "right":
 		if k.curListIdx < len(k.Lists)-1 {
 			target := k.curListIdx + 1
-			if shiftHeld {
+			if ctrlHeld {
+				k.swap(k.curListIdx, target)
+				k.curListIdx = target
+			} else if shiftHeld {
 				if k.currentList().length() > 0 {
 					k.moveNote(target)
 				}

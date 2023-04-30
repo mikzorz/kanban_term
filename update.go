@@ -147,17 +147,17 @@ func renameList(s tcell.Screen) {
 func handleSelectionMovement(ev *tcell.EventKey) {
 	mod := ev.Modifiers()
 	shiftHeld := mod == tcell.ModShift
-	ctrlHeld := mod == tcell.ModShift
-	_ = ctrlHeld // TODO
+	ctrlHeld := mod == tcell.ModCtrl
+
 	switch ev.Key() {
 	case tcell.KeyDown:
-		kan.moveSelection("down", shiftHeld)
+		kan.moveSelection("down", shiftHeld, ctrlHeld)
 	case tcell.KeyUp:
-		kan.moveSelection("up", shiftHeld)
+		kan.moveSelection("up", shiftHeld, ctrlHeld)
 	case tcell.KeyLeft:
-		kan.moveSelection("left", shiftHeld)
+		kan.moveSelection("left", shiftHeld, ctrlHeld)
 	case tcell.KeyRight:
-		kan.moveSelection("right", shiftHeld)
+		kan.moveSelection("right", shiftHeld, ctrlHeld)
 	default:
 		errMsg = "that key does nothing"
 	}
