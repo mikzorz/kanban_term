@@ -39,19 +39,19 @@ func newSaveFile() *os.File {
 		log.Fatalf("can't create new save file, %+v", err)
 	}
 
-	kan.newNote("Example Note 1")
-	kan.newNote("Example Note 2")
+	kan.newKanban()
 
 	return f
 }
 
+// Overwrite kanban.json with current in-mem kanban.
 func saveToFile() {
 	j, err := json.Marshal(&kan)
 	if err != nil {
 		errMsg = fmt.Sprintf("Error: failed to marshal JSON")
 	}
 
-	// Erase old contents. TODO: should backup first. Or just use a db like sqlite.
+	// Erase old contents. TODO: should backup first.
 	if err = saveFile.Truncate(0); err != nil {
 		// log.Fatalf("%+v", err)
 	}
@@ -66,5 +66,5 @@ func saveToFile() {
 }
 
 func backupSave() {
-	// create copy of saveFile, restore when necessary
+	// TODO create copy of saveFile, restore when necessary
 }

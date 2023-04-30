@@ -5,6 +5,9 @@ import (
 	"os"
 )
 
+// TODO: implement scrolling. Too many lists, lists go off screen. Too many notes, notes go offscreen.
+// Selection cursor will "push" the camera if there is more to see offscreen. Camera is not tightly locked to cursor.
+
 const DEBUG_MODE = true
 
 var dir = os.TempDir() + "/kanban_term"
@@ -16,12 +19,7 @@ var saveFile *os.File
 var kan Kanban
 var curList *List
 
-type Box struct {
-	x, y, w, h int
-}
-
 func main() {
-	kan.init()
 
 	errMsg = defErr()
 

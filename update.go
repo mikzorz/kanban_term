@@ -124,6 +124,8 @@ func ctxConfirmHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
 	}
 }
 
+// fn is the function that will run after the confirmation prompt is given a y/Y by the user.
+// a is the action enum that will be substituted into the confirmation prompt. e.g. "Are you sure you want to {a} [y/N]"
 func setConfirm(fn func(), a action) {
 	onConfirm = fn
 	attemptedAction = a
@@ -138,6 +140,10 @@ func editNote(s tcell.Screen) {
 	if kan.currentList().length() > 0 {
 		openEditorStart(s, kan.currentNote().Text, kan.editNote)
 	}
+}
+
+func save(s tcell.Screen) {
+	// TODO: maybe prompt for confirmation, but also show a small window for a few seconds that confirms whether or not the file was saved successfully.
 }
 
 func renameList(s tcell.Screen) {

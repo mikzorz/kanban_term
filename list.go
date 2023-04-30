@@ -13,12 +13,14 @@ type List struct {
 	Box
 }
 
+// Sets size and position of List based on its index within the kanban and the amount of notes the List has.
 func (l *List) SetDimensions(listIndex int) {
-	l.w = 22
+	l.w = 22 // TODO dont hardcode
 	l.x, l.y, l.h = 2+(l.w+2)*listIndex, 1, 0
 	l.UpdateHeight()
 }
 
+// Sets height of List in accordance with the amount of notes it has.
 func (l *List) UpdateHeight() {
 	a := 0
 	if len(l.Notes) > 0 {
@@ -27,10 +29,12 @@ func (l *List) UpdateHeight() {
 	l.h = (4*len(l.Notes) + a)
 }
 
+// len() wrapper. Used to be more useful, I think.
 func (l *List) length() int {
 	return len(l.Notes)
 }
 
+// Add a new note to end of List.
 func (l *List) newNote(text string) {
 	note := &Note{text}
 	l.Notes = append(l.Notes, note)

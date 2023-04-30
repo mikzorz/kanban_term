@@ -12,13 +12,16 @@ type Kanban struct {
 	curNoteIdx int
 }
 
-func (k *Kanban) init() {
+// If starting from a blank save, create three lists.
+func (k *Kanban) newKanban() {
 	k.Lists = make([]*List, 0)
-	k.newList("List 1")
-	k.newList("List 2")
-	k.newList("List 3")
+	k.newList("To do")
+	k.newList("Doing")
+	k.newList("Done!")
 	k.SetListDimensions()
 	k.curListIdx = 0
+	kan.newNote("Example Note 1")
+	kan.newNote("Example Note 2")
 	k.curNoteIdx = 0
 }
 
@@ -103,6 +106,7 @@ func (k *Kanban) swap(i, j int) {
 	k.SetListDimensions()
 }
 
+// Up size and position of lists after a transformation.
 func (k *Kanban) SetListDimensions() {
 	for i, l := range k.Lists {
 		l.SetDimensions(i)
@@ -115,6 +119,7 @@ func (k *Kanban) draw(s tcell.Screen) {
 	}
 }
 
+// Restrict cursor position to the bounds of the kanban (horizontally) and current list (vertically).
 func (k *Kanban) boundSelection() {
 	if k.curListIdx < 0 || len(k.Lists) == 0 {
 		k.curListIdx = 0
@@ -175,18 +180,4 @@ func (k *Kanban) moveHorizontal(targetIndex int, shiftHeld, ctrlHeld bool) {
 		k.curListIdx = targetIndex
 		k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

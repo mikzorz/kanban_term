@@ -20,6 +20,7 @@ var confirmPromptBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Fo
 var errBoxStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
 var errTextStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
 
+// Enum for controlling state
 type context int
 
 const (
@@ -30,6 +31,7 @@ const (
 
 var currentCtx = ctxMain
 
+// Enum for confirmation prompt string substitution
 type action string
 
 const (
@@ -53,31 +55,30 @@ var keyBindingsStringIndex = 0
 
 func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
+
 	xmax, ymax := s.Size()
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "", "") // Background
+
 	kan.draw(s)
+
+	midX, midY := (xmax-1)/2, (ymax-1)/2
 
 	switch currentCtx {
 	case ctxNoteView:
 		var noteViewW, noteViewH = xmax - 8, ymax - 8
-		left := (xmax-1)/2 - (noteViewW / 2)
-		right := (xmax-1)/2 + (noteViewW / 2)
-		top := (ymax-1)/2 - (noteViewH / 2)
-		bottom := (ymax-1)/2 + (noteViewH / 2)
+		b := BoundaryBox{midX - (noteViewW / 2), midY - (noteViewH / 2), midX + (noteViewW / 2), midY + (noteViewH / 2)}
+		x1, y1, x2, y2 := b.x1, b.y1, b.x2, b.y2
 		windowTitle := " Note "
-		drawBox(s, left, top, right, bottom, noteViewBoxStyle, windowTitle, "")
-		// drawText(s, left+2, top, left+2+len(windowTitle), top, defStyle, windowTitle)
-		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, kan.currentNote().Text)
+		drawBox(s, x1, y1, x2, y2, noteViewBoxStyle, windowTitle, "")
+		drawText(s, x1+2, y1+2, x2-2, y2-2, defStyle, kan.currentNote().Text)
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[3])
 	case ctxConfirm:
 		promptMsg := fmt.Sprintf(" Are you sure you want to %s? [y/N] ", attemptedAction)
 		var confirmBoxW, confirmBoxH = len(promptMsg) + 2, 3
-		left := (xmax-1)/2 - (confirmBoxW / 2)
-		right := (xmax-1)/2 + (confirmBoxW / 2)
-		top := (ymax-1)/2 - (confirmBoxH / 2)
-		bottom := (ymax-1)/2 + (confirmBoxH / 2)
-		drawBox(s, left, top, right, bottom, confirmPromptBoxStyle, "", "")
-		drawText(s, left+1, top+1, right-1, bottom-1, defStyle, promptMsg)
+		b := BoundaryBox{midX - (confirmBoxW / 2), midY - (confirmBoxH / 2), midX + (confirmBoxW / 2), midY + (confirmBoxH / 2)}
+		x1, y1, x2, y2 := b.x1, b.y1, b.x2, b.y2
+		drawBox(s, x1, y1, x2, y2, confirmPromptBoxStyle, "", "")
+		drawText(s, x1+1, y1+1, x2-1, y2-1, defStyle, promptMsg)
 	default:
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[keyBindingsStringIndex])
 	}
@@ -91,7 +92,7 @@ func defErr() string {
 	return ""
 }
 
-// fn is expected to be things like list.newNote, list.editNote etc
+// fn is expected to be something like list.newNote, list.editNote etc
 func openEditorStart(s tcell.Screen, defText string, fn func(string)) {
 	// Suspend and Resume are needed to stop text editor from bugging out. Took me too long to figure this out.
 	err := s.Suspend()
@@ -108,6 +109,9 @@ func openEditorStart(s tcell.Screen, defText string, fn func(string)) {
 	}
 }
 
+// Create a temporary file, write string s to the file.
+// Open a text editor which either uses the user's EDITOR environment variable or vi.
+// After the file is closed by the user, read it and return its contents.
 func openEditor(s string) string {
 	// I don't know how to hook directly into a text editor, I tried, didn't work, so I won't. Using tempfiles instead.
 
@@ -127,7 +131,6 @@ func openEditor(s string) string {
 	if editor == "" {
 		editor = "vi"
 	}
-	// log.Printf("Using %s", editor)
 
 	cmd := exec.Command(editor, file.Name())
 	cmd.Stdin = os.Stdin
@@ -135,7 +138,6 @@ func openEditor(s string) string {
 	cmd.Stderr = os.Stderr
 
 	err = cmd.Run()
-	// log.Printf("Running %s...", editor)
 	if err != nil {
 		log.Fatalf("%+v", err)
 	}
@@ -148,6 +150,7 @@ func openEditor(s string) string {
 	return string(b)
 }
 
+// Initialize tcell.screen
 func newScreen() tcell.Screen {
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -175,6 +178,7 @@ func drawText(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string
 	}
 }
 
+// Draw a box with a title on the left-side of the top border
 func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, title, contents string) {
 	if y2 < y1 {
 		y1, y2 = y2, y1
