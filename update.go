@@ -68,6 +68,8 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 		saveToFile()
 	case 'v':
 		currentCtx = ctxNoteView
+	case 'o':
+		keyBindingsStringIndex = (keyBindingsStringIndex + 1) % 3
 	default:
 		errMsg = defErr()
 		handleSelectionMovement(ev)

@@ -89,7 +89,6 @@ func (k *Kanban) SetListDimensions() {
 }
 
 func (k *Kanban) draw(s tcell.Screen) {
-	// TODO Should probably determine list positions here, not in l.draw()
 	for i, l := range k.Lists {
 		l.draw(s, i == k.curListIdx, k.curNoteIdx)
 	}

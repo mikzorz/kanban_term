@@ -76,10 +76,8 @@ func (l *List) drawBox(s tcell.Screen) {
 	if l != kan.currentList() {
 		style = unfocusedListStyle
 	}
-	drawBox(s, l.x, l.y, l.x+l.w, h, style, "")
 	name := fmt.Sprintf(" %s ", strings.TrimSpace(l.Name))
-	ox := 2
-	drawText(s, l.x+ox, l.y, l.x+ox+len(name), l.y, defStyle, name)
+	drawBox(s, l.x, l.y, l.x+l.w, h, style, name, "")
 }
 
 func (l *List) drawNotes(s tcell.Screen, style tcell.Style, isListFocused bool, selectedNote int) {
@@ -91,6 +89,6 @@ func (l *List) drawNotes(s tcell.Screen, style tcell.Style, isListFocused bool, 
 			txt = "> " + txt
 		}
 		curY := y + (4 * i)
-		drawBox(s, x, curY, x+l.w-2, curY+3, style, txt)
+		drawBox(s, x, curY, x+l.w-2, curY+3, style, "", txt)
 	}
 }

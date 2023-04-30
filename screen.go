@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -32,13 +31,19 @@ var currentCtx = ctxMain
 
 var errMsg = ""
 
-// For debugging purposes only.
-var loopCount = 0
+// TODO: There's currently no guarantee that these strings will fit the window. Build them upon window resize.
+var keyBindingsStrings = []string{
+	" q: Quit, s: Save, Arrows: Change selection, Shift+Arrows: Move selection, u: Refresh, o: OtherCmds ",
+	" Notes:: a: Add, e: Edit, d: Delete, v: View, o: OtherCmds ",
+	" Lists:: A: Add, r: Rename, D: Delete, o: OtherCmds ",
+	" q,v: Back, s: Save, e: Edit, d: Delete, arrows: Change selection, Shift+arrows: Move selection, u: refresh ",
+}
+var keyBindingsStringIndex = 0
 
 func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
 	xmax, ymax := s.Size()
-	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
+	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "", "") // Background
 	kan.draw(s)
 
 	// TODO: edit keybinding strings
@@ -50,11 +55,11 @@ func drawScreen(s tcell.Screen) {
 		right := (xmax-1)/2 + (noteViewW / 2)
 		top := (ymax-1)/2 - (noteViewH / 2)
 		bottom := (ymax-1)/2 + (noteViewH / 2)
-		drawBox(s, left, top, right, bottom, noteViewBoxStyle, "")
 		windowTitle := " Note "
-		drawText(s, left+2, top, left+2+len(windowTitle), top, defStyle, windowTitle)
+		drawBox(s, left, top, right, bottom, noteViewBoxStyle, windowTitle, "")
+		// drawText(s, left+2, top, left+2+len(windowTitle), top, defStyle, windowTitle)
 		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, kan.currentNote().Text)
-		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q,v: Back, s: Save, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
+		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[3])
 	case ctxConfirm:
 		promptMsg := " Are you sure you want to quit? [y/N] "
 		var confirmBoxW, confirmBoxH = len(promptMsg) + 2, 3
@@ -62,19 +67,19 @@ func drawScreen(s tcell.Screen) {
 		right := (xmax-1)/2 + (confirmBoxW / 2)
 		top := (ymax-1)/2 - (confirmBoxH / 2)
 		bottom := (ymax-1)/2 + (confirmBoxH / 2)
-		drawBox(s, left, top, right, bottom, confirmPromptBoxStyle, "")
+		drawBox(s, left, top, right, bottom, confirmPromptBoxStyle, "", "")
 		drawText(s, left+1, top+1, right-1, bottom-1, defStyle, promptMsg)
 	default:
-		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, v: View Note, a: New, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
+		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[keyBindingsStringIndex])
 	}
 
 	if DEBUG_MODE {
-		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, errMsg)
+		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, " DEBUG ", errMsg)
 	}
 }
 
 func defErr() string {
-	return fmt.Sprintf("DEBUG: loopCount=%d", loopCount)
+	return ""
 }
 
 // fn is expected to be things like list.newNote, list.editNote etc
@@ -160,11 +165,8 @@ func drawText(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string
 		}
 	}
 }
-func drawErrBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
-	drawBox(s, x1, y1, x2, y2, style, text)
-}
 
-func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string) {
+func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, title, contents string) {
 	if y2 < y1 {
 		y1, y2 = y2, y1
 	}
@@ -198,5 +200,12 @@ func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, text string)
 	if style == errBoxStyle {
 		textStyle = errTextStyle
 	}
-	drawText(s, x1+1, y1+1, x2-1, y2-1, textStyle, text)
+
+	titleOffsetX := 2
+	drawText(s, x1+titleOffsetX, y1, x1+titleOffsetX+len(title), y1, defStyle, title)
+	drawText(s, x1+1, y1+1, x2-1, y2-1, textStyle, contents)
+}
+
+func drawErrBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, title, text string) {
+	drawBox(s, x1, y1, x2, y2, style, title, text)
 }
