@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,16 @@ const (
 )
 
 var currentCtx = ctxMain
+
+type action string
+
+const (
+	ActionQuit       action = "quit"
+	ActionDeleteNote        = "delete this note"
+	ActionDeleteList        = "delete this list"
+)
+
+var attemptedAction = action("")
 
 var errMsg = ""
 
@@ -61,7 +72,7 @@ func drawScreen(s tcell.Screen) {
 		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, kan.currentNote().Text)
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[3])
 	case ctxConfirm:
-		promptMsg := " Are you sure you want to quit? [y/N] "
+		promptMsg := fmt.Sprintf(" Are you sure you want to %s? [y/N] ", attemptedAction)
 		var confirmBoxW, confirmBoxH = len(promptMsg) + 2, 3
 		left := (xmax-1)/2 - (confirmBoxW / 2)
 		right := (xmax-1)/2 + (confirmBoxW / 2)

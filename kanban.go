@@ -50,13 +50,25 @@ func (k *Kanban) renameList(newName string) {
 	k.currentList().Name = newName
 }
 
+func (k *Kanban) isNoteDeletable() bool {
+	if k.currentList().length() == 0 {
+		return false
+	}
+	return true
+}
+
 func (k *Kanban) deleteNote() {
-	// TODO: confirm prompt
 	k.currentList().deleteNote(k.curNoteIdx)
 }
 
+func (k *Kanban) isListDeletable() bool {
+	if len(k.Lists) == 0 {
+		return false
+	}
+	return true
+}
+
 func (k *Kanban) deleteList() {
-	// TODO: confirm prompt
 	le := len(k.Lists)
 	if le == 0 {
 		return

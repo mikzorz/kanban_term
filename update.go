@@ -6,6 +6,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+var tryingToQuit = false
+
+var onConfirm = func() {}
+
 func updateLoop(s tcell.Screen) {
 	for {
 		ev := s.PollEvent()
@@ -31,9 +35,12 @@ func updateLoop(s tcell.Screen) {
 			case ctxNoteView:
 				ctxNoteViewHandler(s, ev)
 			case ctxConfirm:
-				ctxConfirmHandler(s, ev)
 				if ctxConfirmHandler(s, ev) {
-					return
+					if tryingToQuit {
+						return
+					}
+					onConfirm()
+					currentCtx = ctxMain
 				}
 			default:
 				errMsg = "unimplemented context enum"
@@ -49,6 +56,8 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 	r := ev.Rune()
 	switch r {
 	case 'q':
+		tryingToQuit = true
+		attemptedAction = ActionQuit
 		currentCtx = ctxConfirm
 	case 'u':
 		s.Sync()
@@ -61,9 +70,13 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 	case 'r':
 		renameList(s)
 	case 'd':
-		kan.deleteNote()
+		if kan.isNoteDeletable() {
+			setConfirm(kan.deleteNote, ActionDeleteNote)
+		}
 	case 'D':
-		kan.deleteList()
+		if kan.isListDeletable() {
+			setConfirm(kan.deleteList, ActionDeleteList)
+		}
 	case 's':
 		saveToFile()
 	case 'v':
@@ -86,7 +99,9 @@ func ctxNoteViewHandler(s tcell.Screen, ev *tcell.EventKey) {
 	case 'e':
 		editNote(s)
 	case 'd':
-		kan.deleteNote()
+		if kan.isNoteDeletable() {
+			setConfirm(kan.deleteNote, ActionDeleteNote)
+		}
 	case 's':
 		saveToFile()
 	default:
@@ -103,9 +118,16 @@ func ctxConfirmHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
 	case 'y', 'Y':
 		return true
 	default:
+		tryingToQuit = false
 		currentCtx = ctxMain
 		return false
 	}
+}
+
+func setConfirm(fn func(), a action) {
+	onConfirm = fn
+	attemptedAction = a
+	currentCtx = ctxConfirm
 }
 
 func addNote(s tcell.Screen) {
