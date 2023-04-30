@@ -55,21 +55,14 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 	case 'e':
 		editNote(s)
 	case 'd':
-		list.deleteNote()
+		kan.deleteNote()
 	case 's':
 		saveToFile()
 	case 'v':
 		currentCtx = ctxNoteView
 	default:
-		if ev.Key() == tcell.KeyDown {
-			moveSelection("down")
-		} else if ev.Key() == tcell.KeyUp {
-			moveSelection("up")
-		} else {
-			errMsg = "that key does nothing"
-		}
-
 		errMsg = defErr()
+		handleSelectionMovement(ev)
 	}
 }
 
@@ -83,17 +76,11 @@ func ctxNoteViewHandler(s tcell.Screen, ev *tcell.EventKey) {
 	case 'e':
 		editNote(s)
 	case 'd':
-		list.deleteNote()
+		kan.deleteNote()
 	case 's':
 		saveToFile()
 	default:
-		if ev.Key() == tcell.KeyDown {
-			moveSelection("down")
-		} else if ev.Key() == tcell.KeyUp {
-			moveSelection("up")
-		} else {
-			errMsg = "that key does nothing"
-		}
+		handleSelectionMovement(ev)
 
 		errMsg = defErr()
 
@@ -112,9 +99,24 @@ func ctxConfirmHandler(s tcell.Screen, ev *tcell.EventKey) (quit bool) {
 }
 
 func addNote(s tcell.Screen) {
-	openEditorStart(s, "", list.newNote)
+	openEditorStart(s, "", kan.newNote)
 }
 
 func editNote(s tcell.Screen) {
-	openEditorStart(s, list.selected().Text, list.editNote)
+	openEditorStart(s, kan.currentNote().Text, kan.editNote)
+}
+
+func handleSelectionMovement(ev *tcell.EventKey) {
+	switch ev.Key() {
+	case tcell.KeyDown:
+		kan.moveSelection("down")
+	case tcell.KeyUp:
+		kan.moveSelection("up")
+	case tcell.KeyLeft:
+		kan.moveSelection("left")
+	case tcell.KeyRight:
+		kan.moveSelection("right")
+	default:
+		errMsg = "that key does nothing"
+	}
 }

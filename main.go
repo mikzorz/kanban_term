@@ -5,16 +5,23 @@ import (
 	"os"
 )
 
+const DEBUG_MODE = false
+
 var dir = os.TempDir() + "/kanban_term"
 
 var saveFileName = "kanban.json"
 var saveFile *os.File
 
-var list *List
-var selected = 0
+// var list *List
+var kan Kanban
+var curList *List
+
+type Box struct {
+	x, y, w, h int
+}
 
 func main() {
-	list = &List{}
+	kan.init()
 
 	errMsg = defErr()
 

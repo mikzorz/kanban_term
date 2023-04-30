@@ -12,6 +12,9 @@ import (
 
 var defStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorDefault) // Provide option to change, later.
 var boxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorRed)
+var noteBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorWhite)
+var focusedListStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorDarkOrange)
+var unfocusedListStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorMediumPurple)
 var noteViewBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorGreen)
 var confirmPromptBoxStyle = tcell.StyleDefault.Background(tcell.ColorDefault).Foreground(tcell.ColorYellow)
 var errBoxStyle = tcell.StyleDefault.Background(tcell.ColorOrangeRed).Foreground(tcell.ColorBlack)
@@ -36,7 +39,8 @@ func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
 	xmax, ymax := s.Size()
 	drawBox(s, 0, 0, xmax-1, ymax-1, boxStyle, "") // Background
-	list.draw(s)
+	kan.draw(s)
+	// list.draw(s)
 
 	switch currentCtx {
 	case ctxNoteView:
@@ -48,7 +52,7 @@ func drawScreen(s tcell.Screen) {
 		drawBox(s, left, top, right, bottom, noteViewBoxStyle, "")
 		windowTitle := " Note "
 		drawText(s, left+2, top, left+2+len(windowTitle), top, defStyle, windowTitle)
-		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, list.selected().Text)
+		drawText(s, left+2, top+2, right-2, bottom-2, defStyle, kan.currentNote().Text)
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q,v: Back, s: Save, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
 	case ctxConfirm:
 		promptMsg := " Are you sure you want to quit? [y/N] "
@@ -63,13 +67,13 @@ func drawScreen(s tcell.Screen) {
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, " q: Quit, s: Save, v: View Note, a: New, e: Edit, d: Delete, up/down arrows: Change selection, u: refresh ")
 	}
 
-	if errMsg != "" {
+	if DEBUG_MODE {
 		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, errMsg)
 	}
 }
 
 func defErr() string {
-	return fmt.Sprintf("DEBUG: len(list.Notes)=%d selected=%d loopCount=%d", list.length(), selected, loopCount)
+	return fmt.Sprintf("DEBUG: loopCount=%d", loopCount)
 }
 
 // fn is expected to be things like list.newNote, list.editNote etc

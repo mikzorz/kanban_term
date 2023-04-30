@@ -23,11 +23,11 @@ func initSaveFile() *os.File {
 			log.Fatalf("file exists but can't read data, %+v", err)
 		}
 
-		if err = json.Unmarshal(data, &list); err != nil {
+		if err = json.Unmarshal(data, &kan); err != nil {
 			errMsg = fmt.Sprintf("Error: file can be read but can't parse json, %s", err.Error())
 			f = newSaveFile()
 		}
-		list.SetDimensions()
+		kan.SetListDimensions()
 	}
 
 	return f
@@ -39,14 +39,14 @@ func newSaveFile() *os.File {
 		log.Fatalf("can't create new save file, %+v", err)
 	}
 
-	list.newNote("Example Note 1")
-	list.newNote("Example Note 2")
+	kan.newNote("Example Note 1")
+	kan.newNote("Example Note 2")
 
 	return f
 }
 
 func saveToFile() {
-	j, err := json.Marshal(&list)
+	j, err := json.Marshal(&kan)
 	if err != nil {
 		errMsg = fmt.Sprintf("Error: failed to marshal JSON")
 	}
