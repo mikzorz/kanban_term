@@ -5,12 +5,6 @@ import (
 	"os"
 )
 
-// TODO: implement scrolling. Too many lists, lists go off screen. Too many notes, notes go offscreen.
-// Selection cursor will "push" the camera if there is more to see offscreen. Camera is not tightly locked to cursor.
-// For notes, instead of scrolling camera, I might just move the notes themselves. That way, everything else remains as is.
-
-// TODO: Selection is currently buggy
-
 const DEBUG_MODE = false
 
 // const DEBUG_MODE = true

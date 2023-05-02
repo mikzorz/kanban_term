@@ -80,9 +80,6 @@ func (l *List) drawNotes(s tcell.Screen, x int, style tcell.Style, isListFocused
 
 // Return only the Notes that are on screen at this moment.
 func (l *List) notesOnScreen() []*Note {
-	// l.boundTopBottomNoteIndices()
-
-	// // TODO May need to indicate to user if there are notes offscreen.
 	if l.length() == 0 {
 		return []*Note{}
 	}

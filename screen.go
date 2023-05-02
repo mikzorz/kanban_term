@@ -86,6 +86,23 @@ func drawScreen(s tcell.Screen) {
 		drawText(s, 5, ymax-1, xmax-1, ymax-1, defStyle, keyBindingsStrings[keyBindingsStringIndex])
 	}
 
+	// Show selected list and note numbers at top right of screen
+	currentNoteIndex := kan.curNoteIdx + 1
+	if kan.currentList().length() == 0 {
+		currentNoteIndex = 0
+	}
+
+	noteNumber := fmt.Sprintf(" Note %d/%d ", currentNoteIndex, kan.currentList().length())
+	noteNumberXPos := xmax - 2 - len(noteNumber)
+	drawText(s, noteNumberXPos, 0, xmax-1, 0, defStyle, noteNumber)
+
+	currentListIndex := kan.curListIdx + 1
+	if len(kan.Lists) == 0 {
+		currentListIndex = 0
+	}
+	listNumber := fmt.Sprintf(" List %d/%d ", currentListIndex, len(kan.Lists))
+	drawText(s, noteNumberXPos-len(listNumber), 0, xmax-10, 0, defStyle, listNumber)
+
 	if DEBUG_MODE {
 		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, " DEBUG ", errMsg)
 	}
@@ -231,7 +248,6 @@ func maxListsOnScreen(screenWidth int) int {
 	return listSpace / (listWidth + listMarginX)
 }
 
-// TODO
 func maxNotesOnScreen(screenHeight int) int {
 	// 4 == window border + list border
 	noteSpace := screenHeight - 4 - 2*(listMarginY-1) - (noteMargin - 1)

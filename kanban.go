@@ -188,7 +188,6 @@ func (k *Kanban) moveSelection(dir string, shiftHeld, ctrlHeld bool) {
 	}
 }
 
-// TODO implement scrolling vertical through long lists
 func (k *Kanban) moveVertical(targetIndex int, shiftHeld bool) {
 	if shiftHeld {
 		k.currentList().swap(k.curNoteIdx, targetIndex)
@@ -215,8 +214,6 @@ func (k *Kanban) moveHorizontal(targetIndex int, shiftHeld, ctrlHeld bool) {
 // Return only the Lists that are on screen at this moment.
 func (k *Kanban) listsOnScreen() []*List {
 	k.boundLeftRightListIndices()
-
-	// TODO May need to indicate to user if there are lists offscreen.
 
 	if len(k.Lists) == 0 {
 		return []*List{}
