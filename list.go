@@ -15,18 +15,18 @@ type List struct {
 
 // Sets size and position of List based on its index within the kanban and the amount of notes the List has.
 func (l *List) SetDimensions(listIndex int) {
-	l.w = 22 // TODO dont hardcode
-	l.x, l.y, l.h = 2+(l.w+2)*listIndex, 1, 0
+	l.w = listWidth
+	l.x, l.y, l.h = listMargin+(l.w+listMargin)*listIndex, 1, 0
 	l.UpdateHeight()
 }
 
 // Sets height of List in accordance with the amount of notes it has.
 func (l *List) UpdateHeight() {
 	a := 0
-	if len(l.Notes) > 0 {
-		a = 1
+	if len(l.Notes) == 0 {
+		a = noteMargin
 	}
-	l.h = (4*len(l.Notes) + a)
+	l.h = ((noteHeight-1)*len(l.Notes) + ((len(l.Notes) + 1) * noteMargin) + a)
 }
 
 // len() wrapper. Used to be more useful, I think.
@@ -73,9 +73,6 @@ func (l *List) draw(s tcell.Screen, isListFocused bool, curSelected int) {
 
 func (l *List) drawBox(s tcell.Screen) {
 	h := l.y + l.h
-	if l.length() == 0 {
-		h = l.y + 3
-	}
 	style := focusedListStyle
 	if l != kan.currentList() {
 		style = unfocusedListStyle
@@ -85,14 +82,16 @@ func (l *List) drawBox(s tcell.Screen) {
 }
 
 func (l *List) drawNotes(s tcell.Screen, style tcell.Style, isListFocused bool, selectedNote int) {
-	x, y := l.x+1, l.y+1
+	left, topOfFirstNote := l.x+noteMargin, l.y+noteMargin
 
 	for i, n := range l.Notes {
 		txt := n.Text
 		if isListFocused && i == selectedNote {
 			txt = "> " + txt
 		}
-		curY := y + (4 * i)
-		drawBox(s, x, curY, x+l.w-2, curY+3, style, "", txt)
+		topOfCurrentNote := topOfFirstNote + ((noteHeight) * i) + ((noteMargin - 1) * i)
+		right := left + l.w - 2*noteMargin
+		bottomOfCurrentNote := topOfCurrentNote + noteHeight - 1
+		drawBox(s, left, topOfCurrentNote, right, bottomOfCurrentNote, style, "", txt)
 	}
 }
