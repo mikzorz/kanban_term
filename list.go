@@ -8,23 +8,10 @@ import (
 )
 
 type List struct {
-	Name  string  `json:"name"`
-	Notes []*Note `json:"notes"`
-	h     int     // height, in cells
-}
-
-// Sets height of List in accordance with the amount of notes it has.
-func (l *List) UpdateHeight() {
-	a := 0
-	if len(l.Notes) == 0 {
-		a = noteMargin
-	}
-	l.h = ((noteHeight-1)*len(l.Notes) + ((len(l.Notes) + 1) * noteMargin) + a)
-}
-
-// len() wrapper. Used to be more useful, I think.
-func (l *List) length() int {
-	return len(l.Notes)
+	Name             string  `json:"name"`
+	Notes            []*Note `json:"notes"`
+	h                int     // height, in cells
+	topNote, botNote int     // top and bottom-most note indices
 }
 
 // Add a new note to end of List.
@@ -32,6 +19,7 @@ func (l *List) newNote(text string) {
 	note := &Note{text}
 	l.Notes = append(l.Notes, note)
 	l.UpdateHeight()
+	l.boundTopBottomNoteIndices()
 }
 
 func (l *List) editNote(i int, newText string) {
@@ -51,7 +39,7 @@ func (l *List) deleteNote(i int) {
 		l.Notes = append(firstPart, l.Notes[i+1:]...)
 	}
 	l.UpdateHeight()
-	kan.boundSelection()
+	l.boundTopBottomNoteIndices()
 }
 
 // Swap notes at indices i and j.
@@ -78,9 +66,9 @@ func (l *List) drawBox(s tcell.Screen, x int) {
 func (l *List) drawNotes(s tcell.Screen, x int, style tcell.Style, isListFocused bool, selectedNote int) {
 	left, topOfFirstNote := x+noteMargin, listMarginY+noteMargin
 
-	for i, n := range l.Notes {
+	for i, n := range l.notesOnScreen() {
 		txt := n.Text
-		if isListFocused && i == selectedNote {
+		if isListFocused && i == selectedNote-l.topNote {
 			txt = "> " + txt
 		}
 		topOfCurrentNote := topOfFirstNote + ((noteHeight) * i) + ((noteMargin - 1) * i)
@@ -88,4 +76,44 @@ func (l *List) drawNotes(s tcell.Screen, x int, style tcell.Style, isListFocused
 		bottomOfCurrentNote := topOfCurrentNote + noteHeight - 1
 		drawBox(s, left, topOfCurrentNote, right, bottomOfCurrentNote, style, "", txt)
 	}
+}
+
+// Return only the Notes that are on screen at this moment.
+func (l *List) notesOnScreen() []*Note {
+	// l.boundTopBottomNoteIndices()
+
+	// // TODO May need to indicate to user if there are notes offscreen.
+	if l.length() == 0 {
+		return []*Note{}
+	}
+
+	return l.Notes[l.topNote : l.botNote+1]
+}
+
+func (l *List) boundTopBottomNoteIndices() {
+	if l.topNote > l.length()-screenNoteCap {
+		l.topNote = l.length() - screenNoteCap
+	}
+
+	if l.topNote < 0 {
+		l.topNote = 0
+	}
+
+	botNote := l.topNote + screenNoteCap - 1
+	l.botNote = min(botNote, l.length()-1)
+}
+
+// Sets height of List in accordance with the amount of notes it has.
+func (l *List) UpdateHeight() {
+	a := 0
+	if len(l.Notes) == 0 {
+		a = noteMargin
+	}
+	maxNoteCount := min(l.length(), screenNoteCap)
+	l.h = ((noteHeight-1)*maxNoteCount + ((maxNoteCount + 1) * noteMargin) + a)
+}
+
+// len() wrapper. Used to be more useful, I think.
+func (l *List) length() int {
+	return len(l.Notes)
 }

@@ -8,10 +8,10 @@ import (
 )
 
 type Kanban struct {
-	Lists          []*List `json:"lists"`
-	curListIdx     int
-	curNoteIdx     int
-	l_list, r_list int // left and rightmost list indices
+	Lists        []*List `json:"lists"`
+	curListIdx   int
+	curNoteIdx   int
+	lList, rList int // left and right-most list indices
 }
 
 // If starting from a blank save, create three lists.
@@ -20,22 +20,21 @@ func (k *Kanban) newKanban() {
 	k.newList("To do")
 	k.newList("Doing")
 	k.newList("Done!")
-	for i := 0; i < 5; i++ {
-		k.newList(fmt.Sprintf("List %d", i))
-	}
 	k.curListIdx = 0
-	kan.newNote("Example Note 1")
-	kan.newNote("Example Note 2")
+	for i := 1; i <= 2; i++ {
+		kan.newNote(fmt.Sprintf("Task %d", i))
+	}
+	k.currentList().topNote = 0
 	k.curNoteIdx = 0
-	k.l_list = 0
-	k.r_list = 0
+	k.lList = 0
+	k.rList = 0
 }
 
 func (k *Kanban) newList(name string) {
 	l := &List{Name: name, Notes: make([]*Note, 0)}
 	l.UpdateHeight()
 	k.Lists = append(k.Lists, l)
-	k.l_list = len(k.Lists) - screenListCap
+	k.lList = len(k.Lists) - screenListCap
 	k.curListIdx = len(k.Lists) - 1
 }
 
@@ -53,6 +52,7 @@ func (k *Kanban) newNote(text string) {
 	if text == "" {
 		return
 	}
+	k.currentList().topNote = k.currentList().length()
 	k.currentList().newNote(text)
 	k.curNoteIdx = k.currentList().length() - 1
 }
@@ -74,6 +74,7 @@ func (k *Kanban) isNoteDeletable() bool {
 
 func (k *Kanban) deleteNote() {
 	k.currentList().deleteNote(k.curNoteIdx)
+	k.boundSelection()
 }
 
 func (k *Kanban) isListDeletable() bool {
@@ -107,11 +108,14 @@ func (k *Kanban) moveNote(target int) {
 	k.curListIdx = target
 	k.currentList().UpdateHeight()
 	k.curNoteIdx = k.currentList().length() - 1
+	k.currentList().topNote = k.currentList().length()
+	k.currentList().boundTopBottomNoteIndices()
 }
 
-func (k *Kanban) UpdateAllListHeights() {
+func (k *Kanban) UpdateAllLists() {
 	for _, l := range k.Lists {
 		l.UpdateHeight()
+		l.boundTopBottomNoteIndices()
 	}
 }
 
@@ -149,25 +153,33 @@ func (k *Kanban) moveSelection(dir string, shiftHeld, ctrlHeld bool) {
 	switch dir {
 	case "up":
 		if k.curNoteIdx > 0 {
+			if k.curNoteIdx-1 < k.currentList().topNote {
+				k.currentList().topNote--
+				k.currentList().botNote--
+			}
 			k.moveVertical(k.curNoteIdx-1, shiftHeld)
 		}
 	case "down":
 		if k.curNoteIdx < k.currentList().length()-1 {
+			if k.curNoteIdx+1 > k.currentList().botNote {
+				k.currentList().topNote++
+				k.currentList().botNote++
+			}
 			k.moveVertical(k.curNoteIdx+1, shiftHeld)
 		}
 	case "left":
 		if k.curListIdx > 0 {
-			if k.curListIdx-1 < k.l_list {
-				k.l_list--
-				k.r_list--
+			if k.curListIdx-1 < k.lList {
+				k.lList--
+				k.rList--
 			}
 			k.moveHorizontal(k.curListIdx-1, shiftHeld, ctrlHeld)
 		}
 	case "right":
 		if k.curListIdx < len(k.Lists)-1 {
-			if k.curListIdx+1 > k.r_list {
-				k.l_list++
-				k.r_list++
+			if k.curListIdx+1 > k.rList {
+				k.lList++
+				k.rList++
 			}
 			k.moveHorizontal(k.curListIdx+1, shiftHeld, ctrlHeld)
 		}
@@ -193,28 +205,35 @@ func (k *Kanban) moveHorizontal(targetIndex int, shiftHeld, ctrlHeld bool) {
 			k.moveNote(targetIndex)
 		}
 	} else {
+		curNoteIdxRelativeToTopVisibleNoteSoThatTheTargetListDoesntSnapBackToTheTopWhichIThinkDoesntLookVeryNiceTooBeHonest := k.curNoteIdx - k.currentList().topNote
 		k.curListIdx = targetIndex
-		k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
+		k.curNoteIdx = max(0, min(k.currentList().topNote+curNoteIdxRelativeToTopVisibleNoteSoThatTheTargetListDoesntSnapBackToTheTopWhichIThinkDoesntLookVeryNiceTooBeHonest, k.currentList().length()-1))
+		k.currentList().boundTopBottomNoteIndices()
 	}
 }
 
-// Return only the Lists that are on screen on this moment.
+// Return only the Lists that are on screen at this moment.
 func (k *Kanban) listsOnScreen() []*List {
 	k.boundLeftRightListIndices()
 
 	// TODO May need to indicate to user if there are lists offscreen.
-	if len(k.Lists) == 0 { //
+
+	if len(k.Lists) == 0 {
 		return []*List{}
 	}
-	return k.Lists[k.l_list : k.r_list+1]
+
+	return k.Lists[k.lList : k.rList+1]
 }
 
 func (k *Kanban) boundLeftRightListIndices() {
-	if k.l_list >= len(k.Lists) {
-		k.l_list = len(k.Lists) - 1
+	if k.lList >= len(k.Lists) {
+		k.lList = len(k.Lists) - 1
 	}
 
-	rlist := k.l_list + screenListCap - 1
-	k.r_list = min(rlist, len(k.Lists)-1)
+	if k.lList < 0 {
+		k.lList = 0
+	}
 
+	rList := k.lList + screenListCap - 1
+	k.rList = min(rList, len(k.Lists)-1)
 }
