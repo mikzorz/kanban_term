@@ -53,6 +53,8 @@ var keyBindingsStrings = []string{
 }
 var keyBindingsStringIndex = 0
 
+var screenListCap int
+
 func drawScreen(s tcell.Screen) {
 	s.Clear() // Because of the background square, this might not be necessary.
 
@@ -221,4 +223,9 @@ func drawBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, title, conte
 
 func drawErrBox(s tcell.Screen, x1, y1, x2, y2 int, style tcell.Style, title, text string) {
 	drawBox(s, x1, y1, x2, y2, style, title, text)
+}
+
+func maxListsOnScreen(screenWidth int) int {
+	listSpace := screenWidth - 2 - listMarginX
+	return listSpace / (listWidth + listMarginX)
 }

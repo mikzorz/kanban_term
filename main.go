@@ -8,7 +8,7 @@ import (
 // TODO: implement scrolling. Too many lists, lists go off screen. Too many notes, notes go offscreen.
 // Selection cursor will "push" the camera if there is more to see offscreen. Camera is not tightly locked to cursor.
 
-const DEBUG_MODE = false
+const DEBUG_MODE = true
 
 var dir = os.TempDir() + "/kanban_term"
 
@@ -22,7 +22,8 @@ var curList *List
 const noteHeight = 4
 const noteMargin = 1
 const listWidth = 22
-const listMargin = 2
+const listMarginX = 2
+const listMarginY = 1
 
 func main() {
 

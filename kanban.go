@@ -1,15 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gdamore/tcell/v2"
 )
 
 type Kanban struct {
-	Lists      []*List `json:"lists"`
-	curListIdx int
-	curNoteIdx int
+	Lists          []*List `json:"lists"`
+	curListIdx     int
+	curNoteIdx     int
+	l_list, r_list int // left and rightmost list indices
 }
 
 // If starting from a blank save, create three lists.
@@ -18,16 +20,23 @@ func (k *Kanban) newKanban() {
 	k.newList("To do")
 	k.newList("Doing")
 	k.newList("Done!")
-	k.SetListDimensions()
+	for i := 0; i < 5; i++ {
+		k.newList(fmt.Sprintf("List %d", i))
+	}
 	k.curListIdx = 0
 	kan.newNote("Example Note 1")
 	kan.newNote("Example Note 2")
 	k.curNoteIdx = 0
+	k.l_list = 0
+	k.r_list = 0
 }
 
 func (k *Kanban) newList(name string) {
-	k.Lists = append(k.Lists, &List{Name: name, Notes: make([]*Note, 0)})
-	k.SetListDimensions()
+	l := &List{Name: name, Notes: make([]*Note, 0)}
+	l.UpdateHeight()
+	k.Lists = append(k.Lists, l)
+	k.l_list = len(k.Lists) - screenListCap
+	k.curListIdx = len(k.Lists) - 1
 }
 
 func (k *Kanban) currentList() *List {
@@ -87,35 +96,33 @@ func (k *Kanban) deleteList() {
 	} else {
 		k.Lists = append(firstPart, k.Lists[i+1:]...)
 	}
-	k.SetListDimensions()
 	k.boundSelection()
+	k.boundLeftRightListIndices()
 }
 
 // Move note from current list to target list
 func (k *Kanban) moveNote(target int) {
 	k.Lists[target].Notes = append(k.Lists[target].Notes, k.currentNote())
 	k.deleteNote()
-	k.SetListDimensions()
 	k.curListIdx = target
+	k.currentList().UpdateHeight()
 	k.curNoteIdx = k.currentList().length() - 1
+}
+
+func (k *Kanban) UpdateAllListHeights() {
+	for _, l := range k.Lists {
+		l.UpdateHeight()
+	}
 }
 
 // Swap positions of two lists.
 func (k *Kanban) swap(i, j int) {
 	k.Lists[i], k.Lists[j] = k.Lists[j], k.Lists[i]
-	k.SetListDimensions()
-}
-
-// Up size and position of lists after a transformation.
-func (k *Kanban) SetListDimensions() {
-	for i, l := range k.Lists {
-		l.SetDimensions(i)
-	}
 }
 
 func (k *Kanban) draw(s tcell.Screen) {
-	for i, l := range k.Lists {
-		l.draw(s, i == k.curListIdx, k.curNoteIdx)
+	for i, l := range k.listsOnScreen() {
+		l.draw(s, i, i == k.curListIdx, k.curNoteIdx)
 	}
 }
 
@@ -150,10 +157,18 @@ func (k *Kanban) moveSelection(dir string, shiftHeld, ctrlHeld bool) {
 		}
 	case "left":
 		if k.curListIdx > 0 {
+			if k.curListIdx-1 < k.l_list {
+				k.l_list--
+				k.r_list--
+			}
 			k.moveHorizontal(k.curListIdx-1, shiftHeld, ctrlHeld)
 		}
 	case "right":
 		if k.curListIdx < len(k.Lists)-1 {
+			if k.curListIdx+1 > k.r_list {
+				k.l_list++
+				k.r_list++
+			}
 			k.moveHorizontal(k.curListIdx+1, shiftHeld, ctrlHeld)
 		}
 	default:
@@ -161,6 +176,7 @@ func (k *Kanban) moveSelection(dir string, shiftHeld, ctrlHeld bool) {
 	}
 }
 
+// TODO implement scrolling vertical through long lists
 func (k *Kanban) moveVertical(targetIndex int, shiftHeld bool) {
 	if shiftHeld {
 		k.currentList().swap(k.curNoteIdx, targetIndex)
@@ -180,4 +196,25 @@ func (k *Kanban) moveHorizontal(targetIndex int, shiftHeld, ctrlHeld bool) {
 		k.curListIdx = targetIndex
 		k.curNoteIdx = max(0, min(k.curNoteIdx, k.currentList().length()-1))
 	}
+}
+
+// Return only the Lists that are on screen on this moment.
+func (k *Kanban) listsOnScreen() []*List {
+	k.boundLeftRightListIndices()
+
+	// TODO May need to indicate to user if there are lists offscreen.
+	if len(k.Lists) == 0 { //
+		return []*List{}
+	}
+	return k.Lists[k.l_list : k.r_list+1]
+}
+
+func (k *Kanban) boundLeftRightListIndices() {
+	if k.l_list >= len(k.Lists) {
+		k.l_list = len(k.Lists) - 1
+	}
+
+	rlist := k.l_list + screenListCap - 1
+	k.r_list = min(rlist, len(k.Lists)-1)
+
 }

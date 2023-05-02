@@ -27,7 +27,7 @@ func initSaveFile() *os.File {
 			errMsg = fmt.Sprintf("Error: file can be read but can't parse json, %s", err.Error())
 			f = newSaveFile()
 		}
-		kan.SetListDimensions()
+		kan.UpdateAllListHeights()
 	}
 
 	return f

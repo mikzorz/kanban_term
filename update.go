@@ -11,11 +11,15 @@ var tryingToQuit = false
 var onConfirm = func() {}
 
 func updateLoop(s tcell.Screen) {
+	xmax, _ := s.Size()
+	screenListCap = maxListsOnScreen(xmax)
 	for {
 		ev := s.PollEvent()
 		switch ev := ev.(type) {
 		case *tcell.EventResize:
 			s.Sync()
+			xmax, _ = s.Size()
+			screenListCap = maxListsOnScreen(xmax)
 			drawScreen(s)
 			s.Show()
 		case *tcell.EventKey:
@@ -167,6 +171,7 @@ func handleSelectionMovement(ev *tcell.EventKey) {
 	default:
 		errMsg = "that key does nothing"
 	}
-	errMsg = fmt.Sprintf("EventKey Modifiers: %d, noteIndex: %d, listIndex: %d", mod, kan.curNoteIdx, kan.curListIdx)
+	// errMsg = fmt.Sprintf("EventKey Modifiers: %d, noteIndex: %d, listIndex: %d", mod, kan.curNoteIdx, kan.curListIdx)
+	errMsg += fmt.Sprintf("l-list = %d, r-list = %d", kan.l_list, kan.r_list)
 
 }
