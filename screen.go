@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -107,6 +108,12 @@ func drawScreen(s tcell.Screen) {
 	if DEBUG_MODE {
 		drawBox(s, 1, ymax-5, xmax-2, ymax-2, errBoxStyle, " DEBUG ", errMsg)
 	}
+
+	if infoBox.visible {
+		infoBox.draw(s)
+	}
+
+	s.Show()
 }
 
 func defErr() string {
@@ -253,4 +260,31 @@ func maxNotesOnScreen(screenHeight int) int {
 	// 4 == window border + list border
 	noteSpace := screenHeight - 4 - 2*(listMarginY-1) - (noteMargin - 1)
 	return noteSpace / (noteHeight + (noteMargin - 1))
+}
+
+type InfoBox struct {
+	msg     string
+	visible bool
+}
+
+var infoBox = InfoBox{visible: false}
+
+func showInfoBox(dur time.Duration, msg string) {
+	hideInfoBox := func() {
+		infoBox.visible = false
+		drawScreen(s)
+	}
+	infoBox.msg = msg
+	infoBox.visible = true
+	time.AfterFunc(dur, hideInfoBox)
+}
+
+func (i *InfoBox) draw(s tcell.Screen) {
+	xmax, ymax := s.Size()
+	midX, midY := (xmax-1)/2, (ymax-1)/2
+	infoMsg := fmt.Sprintf(" %s ", i.msg)
+	var infoBoxW, infoBoxH = len(infoMsg) + 2, 3
+	x1, y1, x2, y2 := midX-(infoBoxW/2), midY-(infoBoxH/2), midX+(infoBoxW/2), midY+(infoBoxH/2)
+	drawBox(s, x1, y1, x2, y2, errBoxStyle, "", "")
+	drawText(s, x1+1, y1+1, x2-1, y2-1, errTextStyle, infoMsg)
 }

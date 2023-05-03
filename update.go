@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -25,7 +26,6 @@ func updateLoop(s tcell.Screen) {
 			screenNoteCap = maxNotesOnScreen(ymax)
 			kan.UpdateAllLists()
 			drawScreen(s)
-			s.Show()
 		case *tcell.EventKey:
 
 			switch ev.Key() {
@@ -55,7 +55,6 @@ func updateLoop(s tcell.Screen) {
 			}
 
 			drawScreen(s)
-			s.Show()
 		}
 	}
 }
@@ -86,7 +85,7 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 			setConfirm(kan.deleteList, ActionDeleteList)
 		}
 	case 's':
-		setConfirm(saveToFile, ActionSave)
+		setConfirm(save, ActionSave)
 	case 'v':
 		currentCtx = ctxNoteView
 	case 'o':
@@ -111,7 +110,7 @@ func ctxNoteViewHandler(s tcell.Screen, ev *tcell.EventKey) {
 			setConfirm(kan.deleteNote, ActionDeleteNote)
 		}
 	case 's':
-		setConfirm(saveToFile, ActionSave)
+		setConfirm(save, ActionSave)
 	default:
 		handleSelectionMovement(ev)
 
@@ -141,6 +140,7 @@ func setConfirm(fn func(), a action) {
 }
 
 func addNote(s tcell.Screen) {
+	//TODO if no lists, return
 	openEditorStart(s, "", kan.newNote)
 }
 
@@ -174,4 +174,11 @@ func handleSelectionMovement(ev *tcell.EventKey) {
 	// errMsg = fmt.Sprintf("EventKey Modifiers: %d, noteIndex: %d, listIndex: %d", mod, kan.curNoteIdx, kan.curListIdx)
 	errMsg += fmt.Sprintf("screenNoteCap = %d, k.lList = %d, k.rList = %d, l.topNote = %d, l.botNote = %d", screenNoteCap, kan.lList, kan.rList, kan.currentList().topNote, kan.currentList().botNote)
 
+}
+
+func save() {
+	err := saveToFile()
+	if err != nil {
+		showInfoBox(time.Second*2, err.Error())
+	}
 }

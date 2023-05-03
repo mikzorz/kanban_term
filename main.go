@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 	"os"
-)
 
-// TODO Add a confirmation prompt to all of the places where loading and saving can fail. y to continue, n to abort
+	"github.com/gdamore/tcell/v2"
+)
 
 const DEBUG_MODE = false
 
@@ -29,6 +29,8 @@ const listWidth = 22
 const listMarginX = 2
 const listMarginY = 1
 
+var s tcell.Screen
+
 func main() {
 
 	errMsg = defErr()
@@ -43,7 +45,7 @@ func main() {
 	saveFile = initSaveFile()
 	defer saveFile.Close()
 
-	s := newScreen()
+	s = newScreen()
 
 	s.SetStyle(defStyle)
 
@@ -55,6 +57,5 @@ func main() {
 		}
 	}
 	defer quit()
-
 	updateLoop(s)
 }

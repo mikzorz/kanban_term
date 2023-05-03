@@ -3,42 +3,44 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+	"time"
 )
 
 // Opens file if it exists, creates new if it doesn't. Tries to read saved kanban.
 func initSaveFile() *os.File {
 	f, err := os.OpenFile(saveFileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		loadFromBackup()
+		f, err = nil, fmt.Errorf("unable to load or create a save file")
 	} else {
 		err = loadFromSave(f)
 		if err != nil {
-			loadFromBackup()
+			f, err = loadFromBackup()
 		} else {
-			backupSave()
+			err = backupSave()
 		}
 		kan.UpdateAllLists()
 	}
-
+	if err != nil {
+		showInfoBox(time.Second*5, err.Error())
+	}
 	return f
 }
 
-func newSaveFile(filename string) *os.File {
+func newSaveFile(filename string) (*os.File, error) {
 	f, err := os.Create(filename)
 	if err != nil {
-		log.Fatalf("can't create new save file, %+v", err)
+		return nil, err
 	}
 
-	return f
+	return f, nil
 }
 
 // Overwrite kanban.json with current in-mem kanban.
-func saveToFile() {
+func saveToFile() error {
 	j, err := json.Marshal(&kan)
 	if err != nil {
-		errMsg = fmt.Sprintf("Error: failed to marshal JSON")
+		return err
 	}
 
 	if err = saveFile.Truncate(0); err != nil {
@@ -49,10 +51,13 @@ func saveToFile() {
 	}
 
 	if _, err = saveFile.Write(j); err != nil {
-		errMsg = fmt.Sprintf("Error: failed to write JSON to file")
-		log.Fatalf("%+v", err)
+		return err
 	}
-	backupSave()
+	err = backupSave()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func loadFromSave(f *os.File) error {
@@ -62,25 +67,23 @@ func loadFromSave(f *os.File) error {
 	}
 	var data []byte = make([]byte, fi.Size())
 	if _, err = f.Read(data); err != nil {
-		f = newSaveFile(saveFileName)
 		return err
 	}
 
 	if err = json.Unmarshal(data, &kan); err != nil {
-		f = newSaveFile(saveFileName)
 	}
 	return err
 }
 
-func backupSave() {
+func backupSave() error {
 	data, err := os.ReadFile(saveFileName)
 	if err != nil {
-		log.Fatalf("%+v", err)
+		return err
 	}
 
 	backupFile, err := os.OpenFile(backupFileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		log.Fatalf("%+v", err)
+		return err
 	}
 	defer backupFile.Close()
 
@@ -94,23 +97,27 @@ func backupSave() {
 	_, err = backupFile.Write(data)
 	// err = os.WriteFile(backupFileName, data, 0755)
 	if err != nil {
-		log.Fatalf("%+v", err)
+		return err
 	}
+	return nil
 }
 
-func loadFromBackup() *os.File {
+func loadFromBackup() (*os.File, error) {
 	// TODO I'm returning the main save file, but setting the global backup file directly. Should probably return both or set both.
-	f := newSaveFile(saveFileName)
+
+	f, err := newSaveFile(saveFileName)
+	if err != nil {
+		return f, err
+	}
 	bck, err := os.OpenFile(backupFileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		backupFile = newSaveFile(backupFileName)
-		kan.newKanban()
+		return nil, fmt.Errorf("unable to load or create backup save file")
 	} else {
 		err = loadFromSave(bck)
 		if err != nil {
-			backupFile = newSaveFile(backupFileName)
+			backupFile, err = newSaveFile(backupFileName)
 			kan.newKanban()
 		}
 	}
-	return f
+	return f, err
 }
