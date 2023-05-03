@@ -140,7 +140,9 @@ func setConfirm(fn func(), a action) {
 }
 
 func addNote(s tcell.Screen) {
-	//TODO if no lists, return
+	if len(kan.Lists) == 0 {
+		return
+	}
 	openEditorStart(s, "", kan.newNote)
 }
 
