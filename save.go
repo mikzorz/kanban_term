@@ -11,21 +11,13 @@ import (
 func initSaveFile() *os.File {
 	f, err := os.OpenFile(saveFileName, os.O_RDWR|os.O_CREATE, 0755)
 	if err != nil {
-		f = newSaveFile()
+		loadFromBackup()
 	} else {
-		fi, err := f.Stat()
+		err = loadFromSave(f)
 		if err != nil {
-			log.Fatalf("%+v", err)
-		}
-
-		var data []byte = make([]byte, fi.Size())
-		if _, err = f.Read(data); err != nil {
-			log.Fatalf("file exists but can't read data, %+v", err)
-		}
-
-		if err = json.Unmarshal(data, &kan); err != nil {
-			errMsg = fmt.Sprintf("Error: file can be read but can't parse json, %s", err.Error())
-			f = newSaveFile()
+			loadFromBackup()
+		} else {
+			backupSave()
 		}
 		kan.UpdateAllLists()
 	}
@@ -33,13 +25,11 @@ func initSaveFile() *os.File {
 	return f
 }
 
-func newSaveFile() *os.File {
-	f, err := os.Create(saveFileName)
+func newSaveFile(filename string) *os.File {
+	f, err := os.Create(filename)
 	if err != nil {
 		log.Fatalf("can't create new save file, %+v", err)
 	}
-
-	kan.newKanban()
 
 	return f
 }
@@ -51,7 +41,6 @@ func saveToFile() {
 		errMsg = fmt.Sprintf("Error: failed to marshal JSON")
 	}
 
-	// Erase old contents. TODO: should backup first.
 	if err = saveFile.Truncate(0); err != nil {
 		// log.Fatalf("%+v", err)
 	}
@@ -63,8 +52,65 @@ func saveToFile() {
 		errMsg = fmt.Sprintf("Error: failed to write JSON to file")
 		log.Fatalf("%+v", err)
 	}
+	backupSave()
+}
+
+func loadFromSave(f *os.File) error {
+	fi, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	var data []byte = make([]byte, fi.Size())
+	if _, err = f.Read(data); err != nil {
+		f = newSaveFile(saveFileName)
+		return err
+	}
+
+	if err = json.Unmarshal(data, &kan); err != nil {
+		f = newSaveFile(saveFileName)
+	}
+	return err
 }
 
 func backupSave() {
-	// TODO create copy of saveFile, restore when necessary
+	data, err := os.ReadFile(saveFileName)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	backupFile, err := os.OpenFile(backupFileName, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+	defer backupFile.Close()
+
+	if err = backupFile.Truncate(0); err != nil {
+		// log.Fatalf("%+v", err)
+	}
+	if _, err = backupFile.Seek(0, 0); err != nil {
+		// log.Fatalf("%+v", err)
+	}
+
+	_, err = backupFile.Write(data)
+	// err = os.WriteFile(backupFileName, data, 0755)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+}
+
+func loadFromBackup() *os.File {
+	// TODO I'm returning the main save file, but setting the global backup file directly. Should probably return both or set both.
+	f := newSaveFile(saveFileName)
+	bck, err := os.OpenFile(backupFileName, os.O_RDWR|os.O_CREATE, 0755)
+	if err != nil {
+		backupFile = newSaveFile(backupFileName)
+		kan.newKanban()
+	} else {
+		err = loadFromSave(bck)
+		if err != nil {
+			backupFile = newSaveFile(backupFileName)
+			kan.newKanban()
+		}
+	}
+	return f
 }

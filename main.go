@@ -5,6 +5,8 @@ import (
 	"os"
 )
 
+// Add a confirmation prompt to all of the places where loading and saving can fail. y to continue, n to abort
+
 const DEBUG_MODE = false
 
 // const DEBUG_MODE = true
@@ -12,8 +14,10 @@ const DEBUG_MODE = false
 var dir = os.TempDir() + "/kanban_term"
 
 const saveFileName = "kanban_term.json" // TODO make sure that the save file is in either the PWD, or is supplied as an arg.
+const backupFileName = "kanban_term.json.bak"
 
 var saveFile *os.File
+var backupFile *os.File
 
 var kan Kanban
 var curList *List
