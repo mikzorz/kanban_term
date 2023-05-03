@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-// Add a confirmation prompt to all of the places where loading and saving can fail. y to continue, n to abort
+// TODO Add a confirmation prompt to all of the places where loading and saving can fail. y to continue, n to abort
 
 const DEBUG_MODE = false
 

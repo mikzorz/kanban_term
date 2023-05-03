@@ -86,7 +86,7 @@ func ctxMainHandler(s tcell.Screen, ev *tcell.EventKey) {
 			setConfirm(kan.deleteList, ActionDeleteList)
 		}
 	case 's':
-		saveToFile()
+		setConfirm(saveToFile, ActionSave)
 	case 'v':
 		currentCtx = ctxNoteView
 	case 'o':
@@ -111,7 +111,7 @@ func ctxNoteViewHandler(s tcell.Screen, ev *tcell.EventKey) {
 			setConfirm(kan.deleteNote, ActionDeleteNote)
 		}
 	case 's':
-		saveToFile()
+		setConfirm(saveToFile, ActionSave)
 	default:
 		handleSelectionMovement(ev)
 
@@ -148,10 +148,6 @@ func editNote(s tcell.Screen) {
 	if kan.currentList().length() > 0 {
 		openEditorStart(s, kan.currentNote().Text, kan.editNote)
 	}
-}
-
-func save(s tcell.Screen) {
-	// TODO: maybe prompt for confirmation, but also show a small window for a few seconds that confirms whether or not the file was saved successfully.
 }
 
 func renameList(s tcell.Screen) {

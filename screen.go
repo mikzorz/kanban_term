@@ -38,6 +38,7 @@ const (
 	ActionQuit       action = "quit"
 	ActionDeleteNote        = "delete this note"
 	ActionDeleteList        = "delete this list"
+	ActionSave              = "save"
 )
 
 var attemptedAction = action("")
