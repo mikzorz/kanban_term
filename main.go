@@ -13,8 +13,8 @@ const DEBUG_MODE = false
 
 var dir = os.TempDir() + "/kanban_term"
 
-const saveFileName = "kanban_term.json" // TODO make sure that the save file is in either the PWD, or is supplied as an arg.
-const backupFileName = "kanban_term.json.bak"
+const saveFileName = ".kanban_term.json" // TODO make sure that the save file is in either the PWD, or is supplied as an arg.
+const backupFileName = ".kanban_term.json.bak"
 
 var saveFile *os.File
 var backupFile *os.File
